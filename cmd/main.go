@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"go-interpreter/lexer"
+	"go-interpreter/parser"
 	"go-interpreter/utils"
 	"os"
 	"strings"
@@ -52,7 +53,15 @@ func run(fn string, src string) {
 		os.Exit(1)
 	}
 
-	utils.LogAsJSON("TOKENS", tokens)
+	pars := parser.NewParser(tokens)
+	ast := pars.Parse()
+
+	if ast.Error != nil {
+		fmt.Println(ast.Error.Error())
+		os.Exit(1)
+	}
+
+	utils.LogAsJSON("AST", ast)
 }
 
 func main() {

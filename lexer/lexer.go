@@ -1,20 +1,11 @@
 package lexer
 
 import (
-	"errors"
 	"fmt"
+	"go-interpreter/shared"
 	"regexp"
 	"strings"
 )
-
-func BaseError(posStart *Position, posEnd *Position, errorName string, details string) error {
-	errorMsg := fmt.Sprintf("%s: %s\nFile %s, line %d", errorName, details, posStart.Fn, posStart.Ln+1)
-	return errors.New(errorMsg)
-}
-
-func IllegalCharError(posStart *Position, posEnd *Position, details string) error {
-	return BaseError(posStart, posEnd, "Illegal Character", details)
-}
 
 type TokenType string
 
@@ -27,58 +18,41 @@ const (
 	DivideTT     TokenType = "Divide"
 	OpenParenTT  TokenType = "OpenParen"
 	CloseParenTT TokenType = "CloseParen"
+	EOFTT        TokenType = "EOF"
 )
 
 type Token struct {
-	Type  TokenType
-	Value string
+	Type     TokenType
+	Value    string
+	PosStart *shared.Position
+	PosEnd   *shared.Position
 }
 
-func NewToken(tokenType TokenType, value string) *Token {
-	return &Token{
-		Type:  tokenType,
-		Value: value,
-	}
-}
-
-type Position struct {
-	Idx  int    // index of character
-	Ln   int    // line
-	Col  int    // column
-	Fn   string // filename
-	Ftxt string // text
-}
-
-func NewPosition(i, l, c int, fn, ftxt string) *Position {
-	return &Position{
-		Idx:  i,
-		Ln:   l,
-		Col:  c,
-		Fn:   fn,
-		Ftxt: ftxt,
-	}
-}
-
-func (p *Position) advance(currentChar string) *Position {
-	p.Idx++
-	p.Col++
-
-	if currentChar == "\n" {
-		p.Ln++
-		p.Col = 0
+func NewToken(tokenType TokenType, value string, posStart, posEnd *shared.Position) *Token {
+	tok := &Token{
+		Type:     tokenType,
+		Value:    value,
+		PosStart: nil,
+		PosEnd:   nil,
 	}
 
-	return p
-}
+	if posStart != nil {
+		tok.PosStart = posStart.Copy()
+		tok.PosEnd = posStart.Copy()
+		tok.PosEnd.Advance("")
+	}
 
-func (p *Position) copy() *Position {
-	return NewPosition(p.Idx, p.Ln, p.Col, p.Fn, p.Ftxt)
+	if posEnd != nil {
+		tok.PosEnd = posEnd.Copy()
+	}
+
+	return tok
 }
 
 type Lexer struct {
 	fn              string
 	text            []string
-	currentPosition *Position
+	currentPosition *shared.Position
 	currentChar     string
 }
 
@@ -86,7 +60,7 @@ func NewLexer(fn, input string) *Lexer {
 	lex := &Lexer{
 		fn:              fn,
 		text:            strings.Split(input, ""),
-		currentPosition: NewPosition(-1, 0, -1, fn, input),
+		currentPosition: shared.NewPosition(-1, 0, -1, fn, input),
 		currentChar:     "",
 	}
 	lex.advance()
@@ -95,7 +69,7 @@ func NewLexer(fn, input string) *Lexer {
 }
 
 func (lex *Lexer) advance() {
-	lex.currentPosition.advance(lex.currentChar)
+	lex.currentPosition.Advance(lex.currentChar)
 	if lex.currentPosition.Idx < len(lex.text) {
 		lex.currentChar = lex.text[lex.currentPosition.Idx]
 	} else {
@@ -115,6 +89,8 @@ func (lex *Lexer) makeNumber() *Token {
 	numString := ""
 	dotCount := 0
 
+	posStart := lex.currentPosition.Copy()
+
 	for lex.currentChar != "" && (lex.isDigit(lex.currentChar) || lex.currentChar == ".") {
 		if lex.currentChar == "." {
 			if dotCount == 1 {
@@ -129,9 +105,9 @@ func (lex *Lexer) makeNumber() *Token {
 	}
 
 	if dotCount == 0 {
-		return NewToken(IntTT, numString)
+		return NewToken(IntTT, numString, posStart, lex.currentPosition)
 	} else {
-		return NewToken(FloatTT, numString)
+		return NewToken(FloatTT, numString, posStart, lex.currentPosition)
 	}
 }
 
@@ -144,31 +120,32 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 		} else if lex.isDigit(lex.currentChar) {
 			tokens = append(tokens, lex.makeNumber())
 		} else if lex.currentChar == "+" {
-			tokens = append(tokens, NewToken(PlusTT, lex.currentChar))
+			tokens = append(tokens, NewToken(PlusTT, lex.currentChar, lex.currentPosition, nil))
 			lex.advance()
 		} else if lex.currentChar == "-" {
-			tokens = append(tokens, NewToken(MinusTT, lex.currentChar))
+			tokens = append(tokens, NewToken(MinusTT, lex.currentChar, lex.currentPosition, nil))
 			lex.advance()
 		} else if lex.currentChar == "*" {
-			tokens = append(tokens, NewToken(MultiplyTT, lex.currentChar))
+			tokens = append(tokens, NewToken(MultiplyTT, lex.currentChar, lex.currentPosition, nil))
 			lex.advance()
 		} else if lex.currentChar == "/" {
-			tokens = append(tokens, NewToken(DivideTT, lex.currentChar))
+			tokens = append(tokens, NewToken(DivideTT, lex.currentChar, lex.currentPosition, nil))
 			lex.advance()
 		} else if lex.currentChar == "(" {
-			tokens = append(tokens, NewToken(OpenParenTT, lex.currentChar))
+			tokens = append(tokens, NewToken(OpenParenTT, lex.currentChar, lex.currentPosition, nil))
 			lex.advance()
 		} else if lex.currentChar == "/" {
-			tokens = append(tokens, NewToken(CloseParenTT, lex.currentChar))
+			tokens = append(tokens, NewToken(CloseParenTT, lex.currentChar, lex.currentPosition, nil))
 			lex.advance()
 		} else {
-			posStart := lex.currentPosition.copy()
+			posStart := lex.currentPosition.Copy()
 			cc := lex.currentChar
 			lex.advance()
-			return nil, IllegalCharError(posStart, lex.currentPosition, fmt.Sprintf("'%s'", cc))
+			return nil, shared.IllegalCharError(posStart, lex.currentPosition, fmt.Sprintf("'%s'", cc))
 		}
 
 	}
 
+	tokens = append(tokens, NewToken(EOFTT, "", lex.currentPosition, nil))
 	return tokens, nil
 }
