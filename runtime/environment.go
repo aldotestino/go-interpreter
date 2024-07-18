@@ -11,10 +11,22 @@ type Environment struct {
 }
 
 func NewEnvironment(p *Environment) *Environment {
-	return &Environment{
+	env := &Environment{
 		variables: make(map[string]RuntimeValue),
 		parent:    p,
 	}
+
+	if p == nil {
+		env.init()
+	}
+
+	return env
+}
+
+func (env *Environment) init() {
+	env.Set("null", NewNumberValue(0))
+	env.Set("true", NewNumberValue(1))
+	env.Set("false", NewNumberValue(0))
 }
 
 func (env *Environment) Get(varName string) (RuntimeValue, error) {

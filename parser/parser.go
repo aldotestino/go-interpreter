@@ -7,7 +7,10 @@ import (
 )
 
 // expr  :  KEYWORD:var IDENTIFIER EQ expr
-//       :  term ((PLUS|MINUS) term)*
+//       :  comp ((KEYWORD:and|KEYWORD:or) comp)*
+// comp  :  KEYWORD:not comp
+//       :  math ((EE|NE|LT|LTE|GT|GTE) math)*
+// math  :  term ((PLUS|MINUS) term)*
 // term  :  factor ((MUL|DIV) factor)*
 // factor:  (PLUS|MINUS) factor
 //       :  power
@@ -72,7 +75,7 @@ func (pars *Parser) atom() (AstNode, error) {
 	if pars.currentPosition > 1 { // we advanced, so we don't expect the 'var' keyword
 		errMsg = "Expected int, float, identifier, '+', '-' or ')'"
 	} else {
-		errMsg = "Expected int, float, identifier, 'var', '+', '-' or ')'"
+		errMsg = "Expected int, float, identifier, 'var', '+', '-', ')' or '!'"
 	}
 
 	return nil, shared.InvalidSyntaxError(errMsg)
@@ -95,14 +98,14 @@ func (pars *Parser) factor() (AstNode, error) {
 	return pars.power()
 }
 
-func (pars *Parser) binOp(lf, rf func() (AstNode, error), ops []lexer.TokenType) (AstNode, error) {
+func (pars *Parser) binOp(lf, rf func() (AstNode, error), cond func(t *lexer.Token) bool) (AstNode, error) {
 	left, err := lf()
 
 	if err != nil {
 		return nil, err
 	}
 
-	for slices.Contains(ops, pars.currentToken.Type) {
+	for cond(pars.currentToken) {
 		opToken := pars.currentToken
 		pars.advance()
 		right, err := rf()
@@ -117,12 +120,41 @@ func (pars *Parser) binOp(lf, rf func() (AstNode, error), ops []lexer.TokenType)
 	return left, nil
 }
 
+func (pars *Parser) math() (AstNode, error) {
+	return pars.binOp(pars.term, pars.term, func(t *lexer.Token) bool {
+		return slices.Contains([]lexer.TokenType{lexer.PlusTT, lexer.MinusTT}, t.Type)
+	})
+}
+
+func (pars *Parser) comp() (AstNode, error) {
+	if pars.currentToken.Matches(lexer.KeywordTT, "not") {
+		opToken := pars.currentToken
+		pars.advance()
+
+		node, err := pars.expr()
+
+		if err != nil {
+			return nil, err
+		}
+
+		return NewUnOpNode(node, opToken), nil
+	}
+
+	return pars.binOp(pars.math, pars.math, func(t *lexer.Token) bool {
+		return slices.Contains([]lexer.TokenType{lexer.DoubleEqualsTT, lexer.NotEqualsTT, lexer.LessThanTT, lexer.LessThanEqualsTT, lexer.GreaterThanTT, lexer.GreaterThanEqualsTT}, t.Type)
+	})
+}
+
 func (pars *Parser) power() (AstNode, error) {
-	return pars.binOp(pars.atom, pars.factor, []lexer.TokenType{lexer.PowerTT})
+	return pars.binOp(pars.atom, pars.factor, func(t *lexer.Token) bool {
+		return t.Type == lexer.PowerTT
+	})
 }
 
 func (pars *Parser) term() (AstNode, error) {
-	return pars.binOp(pars.factor, pars.factor, []lexer.TokenType{lexer.MultiplyTT, lexer.DivideTT})
+	return pars.binOp(pars.factor, pars.factor, func(t *lexer.Token) bool {
+		return slices.Contains([]lexer.TokenType{lexer.PlusTT, lexer.MinusTT}, t.Type)
+	})
 }
 
 func (pars *Parser) expr() (AstNode, error) {
@@ -150,7 +182,9 @@ func (pars *Parser) expr() (AstNode, error) {
 		return NewVarAssignNode(varName, expr), nil
 	}
 
-	return pars.binOp(pars.term, pars.term, []lexer.TokenType{lexer.PlusTT, lexer.MinusTT})
+	return pars.binOp(pars.comp, pars.comp, func(t *lexer.Token) bool {
+		return t.Matches(lexer.KeywordTT, "and") || t.Matches(lexer.KeywordTT, "or")
+	})
 }
 
 func (pars *Parser) Parse() (AstNode, error) {

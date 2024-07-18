@@ -21,3 +21,7 @@ func InvalidSyntaxError(details string) error {
 func RuntimeError(details string) error {
 	return baseError("Runtime Error", details)
 }
+
+func ExpectedCharError(details string) error {
+	return baseError("Expected Character", details)
+}

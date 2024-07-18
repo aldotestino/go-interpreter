@@ -87,6 +87,62 @@ func (lex *Lexer) makeIdentifier() *Token {
 	return NewToken(IdentifierTT, idString)
 }
 
+func (lex *Lexer) makeNotEquals() (*Token, error) {
+	lex.advance()
+
+	if lex.currentChar == "=" {
+		lex.advance()
+		return NewToken(NotEqualsTT, "!="), nil
+	}
+
+	return nil, shared.ExpectedCharError("'=' (after '!')")
+}
+
+func (lex *Lexer) makeEquals() *Token {
+	lex.advance()
+
+	tt := EqualsTT
+	val := "="
+
+	if lex.currentChar == "=" {
+		lex.advance()
+		tt = DoubleEqualsTT
+		val = "=="
+	}
+
+	return NewToken(tt, val)
+}
+
+func (lex *Lexer) makeLessThan() *Token {
+	lex.advance()
+
+	tt := LessThanTT
+	val := "<"
+
+	if lex.currentChar == "=" {
+		lex.advance()
+		tt = LessThanEqualsTT
+		val = "<="
+	}
+
+	return NewToken(tt, val)
+}
+
+func (lex *Lexer) makeGreaterThan() *Token {
+	lex.advance()
+
+	tt := GreaterThanTT
+	val := ">"
+
+	if lex.currentChar == "=" {
+		lex.advance()
+		tt = GreaterThanEqualsTT
+		val = ">="
+	}
+
+	return NewToken(tt, val)
+}
+
 func (lex *Lexer) Tokenize() ([]*Token, error) {
 	tokens := make([]*Token, 0)
 
@@ -112,15 +168,24 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 		} else if lex.currentChar == "^" {
 			tokens = append(tokens, NewToken(PowerTT, lex.currentChar))
 			lex.advance()
-		} else if lex.currentChar == "=" {
-			tokens = append(tokens, NewToken(EqualsTT, lex.currentChar))
-			lex.advance()
 		} else if lex.currentChar == "(" {
 			tokens = append(tokens, NewToken(OpenParenTT, lex.currentChar))
 			lex.advance()
 		} else if lex.currentChar == ")" {
 			tokens = append(tokens, NewToken(CloseParenTT, lex.currentChar))
 			lex.advance()
+		} else if lex.currentChar == "!" {
+			neToken, err := lex.makeNotEquals()
+			if err != nil {
+				return nil, err
+			}
+			tokens = append(tokens, neToken)
+		} else if lex.currentChar == "=" { // creates '=' or '=='
+			tokens = append(tokens, lex.makeEquals())
+		} else if lex.currentChar == "<" { // creates '<' or '<='
+			tokens = append(tokens, lex.makeLessThan())
+		} else if lex.currentChar == ">" { // creates '>' or '>='
+			tokens = append(tokens, lex.makeGreaterThan())
 		} else {
 			cc := lex.currentChar
 			lex.advance()

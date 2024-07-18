@@ -3,19 +3,25 @@ package lexer
 type TokenType string
 
 const (
-	IntTT        TokenType = "Int"
-	FloatTT      TokenType = "Float"
-	IdentifierTT TokenType = "Identifier"
-	KeywordTT    TokenType = "Keyword"
-	PlusTT       TokenType = "Plus"
-	MinusTT      TokenType = "Minus"
-	MultiplyTT   TokenType = "Multiply"
-	DivideTT     TokenType = "Divide"
-	PowerTT      TokenType = "Power"
-	EqualsTT     TokenType = "Equals"
-	OpenParenTT  TokenType = "OpenParen"
-	CloseParenTT TokenType = "CloseParen"
-	EOFTT        TokenType = "EOF"
+	IntTT               TokenType = "Int"
+	FloatTT             TokenType = "Float"
+	IdentifierTT        TokenType = "Identifier"
+	KeywordTT           TokenType = "Keyword"
+	PlusTT              TokenType = "Plus"
+	MinusTT             TokenType = "Minus"
+	MultiplyTT          TokenType = "Multiply"
+	DivideTT            TokenType = "Divide"
+	PowerTT             TokenType = "Power"
+	EqualsTT            TokenType = "Equals"
+	OpenParenTT         TokenType = "OpenParen"
+	CloseParenTT        TokenType = "CloseParen"
+	DoubleEqualsTT      TokenType = "DoubleEquals"
+	NotEqualsTT         TokenType = "NotEquals"
+	LessThanTT          TokenType = "LessThan"
+	GreaterThanTT       TokenType = "GreaterThan"
+	LessThanEqualsTT    TokenType = "LessThanEquals"
+	GreaterThanEqualsTT TokenType = "GreaterThanEquals"
+	EOFTT               TokenType = "EOF"
 )
 
 type Token struct {
@@ -34,4 +40,4 @@ func (t *Token) Matches(tt TokenType, v string) bool {
 	return t.Type == tt && t.Value == v
 }
 
-var KEYWORDS = []string{"var"}
+var KEYWORDS = []string{"var", "and", "or", "not"}

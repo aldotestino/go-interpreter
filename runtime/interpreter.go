@@ -4,6 +4,7 @@ import (
 	"go-interpreter/lexer"
 	"go-interpreter/parser"
 	"go-interpreter/shared"
+	"go-interpreter/utils"
 	"math"
 	"strconv"
 )
@@ -32,6 +33,12 @@ func (intr *Interpreter) visitUnOpNode(node *parser.UnOpNode, env *Environment) 
 
 	if node.Operator.Type == lexer.MinusTT {
 		return NewNumberValue(num.(*NumberValue).Value * -1), nil
+	} else if node.Operator.Matches(lexer.KeywordTT, "not") {
+		if num.(*NumberValue).Value == 0 {
+			return NewNumberValue(1), nil
+		} else {
+			return NewNumberValue(0), nil
+		}
 	}
 
 	return num, nil
@@ -50,23 +57,37 @@ func (intr *Interpreter) visitBinOpNode(node *parser.BinOpNode, env *Environment
 		return nil, err
 	}
 
-	switch node.Operation.Type {
-	case lexer.PlusTT:
+	if node.Operation.Type == lexer.PlusTT {
 		return NewNumberValue(lhs.(*NumberValue).Value + rhs.(*NumberValue).Value), nil
-	case lexer.MinusTT:
+	} else if node.Operation.Type == lexer.MinusTT {
 		return NewNumberValue(lhs.(*NumberValue).Value - rhs.(*NumberValue).Value), nil
-	case lexer.MultiplyTT:
+	} else if node.Operation.Type == lexer.MultiplyTT {
 		return NewNumberValue(lhs.(*NumberValue).Value * rhs.(*NumberValue).Value), nil
-	case lexer.DivideTT:
+	} else if node.Operation.Type == lexer.DivideTT {
 		if rhs.(*NumberValue).Value == 0 {
 			return nil, shared.RuntimeError("Division by 0")
 		}
 		return NewNumberValue(lhs.(*NumberValue).Value / rhs.(*NumberValue).Value), nil
-	case lexer.PowerTT:
+	} else if node.Operation.Type == lexer.PowerTT {
 		return NewNumberValue(math.Pow(lhs.(*NumberValue).Value, rhs.(*NumberValue).Value)), nil
-	default:
-		return nil, shared.RuntimeError("Unsupported operation")
+	} else if node.Operation.Type == lexer.DoubleEqualsTT {
+		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value == rhs.(*NumberValue).Value)), nil
+	} else if node.Operation.Type == lexer.NotEqualsTT {
+		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value != rhs.(*NumberValue).Value)), nil
+	} else if node.Operation.Type == lexer.LessThanTT {
+		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value < rhs.(*NumberValue).Value)), nil
+	} else if node.Operation.Type == lexer.LessThanEqualsTT {
+		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value <= rhs.(*NumberValue).Value)), nil
+	} else if node.Operation.Type == lexer.GreaterThanTT {
+		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value > rhs.(*NumberValue).Value)), nil
+	} else if node.Operation.Type == lexer.GreaterThanEqualsTT {
+		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value >= rhs.(*NumberValue).Value)), nil
+	} else if node.Operation.Matches(lexer.KeywordTT, "and") {
+		return NewNumberValue(utils.AndNumbers(lhs.(*NumberValue).Value, rhs.(*NumberValue).Value)), nil
+	} else if node.Operation.Matches(lexer.KeywordTT, "or") {
+		return NewNumberValue(utils.OrNumbers(lhs.(*NumberValue).Value, rhs.(*NumberValue).Value)), nil
 	}
+	return nil, shared.RuntimeError("Unsupported operation")
 }
 
 func (intr *Interpreter) visitVarAccessNode(node *parser.VarAccessNode, env *Environment) (RuntimeValue, error) {
