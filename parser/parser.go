@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"go-interpreter/errors"
 	"go-interpreter/lexer"
+	"go-interpreter/shared"
 )
 
 // expr: term ((PLUS|MINUS) term)*
@@ -55,7 +55,6 @@ func (pars *Parser) factor() (AstNode, error) {
 		return NewNumberNode(token), nil
 	} else if token.Type == lexer.OpenParenTT {
 		pars.advance()
-
 		expr, err := pars.expr()
 
 		if err != nil {
@@ -66,11 +65,11 @@ func (pars *Parser) factor() (AstNode, error) {
 			pars.advance()
 			return expr, nil
 		} else {
-			return nil, errors.InvalidSyntaxError("Expected ')'")
+			return nil, shared.InvalidSyntaxError("Expected ')'")
 		}
 	}
 
-	return nil, errors.InvalidSyntaxError("Expected int or float")
+	return nil, shared.InvalidSyntaxError("Expected int or float")
 }
 
 func (pars *Parser) term() (AstNode, error) {
@@ -125,7 +124,7 @@ func (pars *Parser) Parse() (AstNode, error) {
 	}
 
 	if pars.currentToken.Type != lexer.EOFTT {
-		return nil, errors.InvalidSyntaxError("Expected '+', '-', '*', '/'")
+		return nil, shared.InvalidSyntaxError("Expected '+', '-', '*', '/'")
 	}
 
 	return res, nil

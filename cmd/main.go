@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go-interpreter/lexer"
 	"go-interpreter/parser"
-	"go-interpreter/utils"
+	"go-interpreter/runtime"
 	"os"
 	"strings"
 )
@@ -57,7 +57,14 @@ func run(fn string, src string) {
 		if err != nil {
 			fmt.Println(err.Error())
 		} else {
-			utils.LogAsJSON("AST", ast)
+			intr := runtime.NewInterpreter()
+			res, err := intr.Visit(ast)
+
+			if err != nil {
+				fmt.Println(err.Error())
+			} else {
+				fmt.Println(res.GetValue())
+			}
 		}
 	}
 

@@ -1,4 +1,4 @@
-package errors
+package shared
 
 import (
 	"errors"
@@ -16,4 +16,8 @@ func IllegalCharError(details string) error {
 
 func InvalidSyntaxError(details string) error {
 	return baseError("Invalid Syntax", details)
+}
+
+func RuntimeError(details string) error {
+	return baseError("Runtime Error", details)
 }

@@ -2,7 +2,7 @@ package lexer
 
 import (
 	"fmt"
-	"go-interpreter/errors"
+	"go-interpreter/shared"
 	"regexp"
 	"strings"
 )
@@ -96,7 +96,7 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 		} else {
 			cc := lex.currentChar
 			lex.advance()
-			return nil, errors.IllegalCharError(fmt.Sprintf("'%s'", cc))
+			return nil, shared.IllegalCharError(fmt.Sprintf("'%s'", cc))
 		}
 
 	}
