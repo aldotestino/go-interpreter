@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func runFromFile(filename string) {
+func runFromFile(filename string, env *runtime.Environment) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err.Error())
@@ -18,10 +18,10 @@ func runFromFile(filename string) {
 
 	input := string(data)
 
-	run(filename, input)
+	run(input, env)
 }
 
-func runFromRepl() {
+func runFromRepl(env *runtime.Environment) {
 	fmt.Println("\nRepl v0.1")
 	reader := bufio.NewReader(os.Stdin)
 
@@ -40,12 +40,12 @@ func runFromRepl() {
 			os.Exit(0)
 		}
 
-		run("<stdin>", input)
+		run(input, env)
 	}
 }
 
-func run(fn string, src string) {
-	lex := lexer.NewLexer(fn, src)
+func run(src string, env *runtime.Environment) {
+	lex := lexer.NewLexer(src)
 	tokens, err := lex.Tokenize()
 
 	if err != nil {
@@ -58,7 +58,7 @@ func run(fn string, src string) {
 			fmt.Println(err.Error())
 		} else {
 			intr := runtime.NewInterpreter()
-			res, err := intr.Visit(ast)
+			res, err := intr.Visit(ast, env)
 
 			if err != nil {
 				fmt.Println(err.Error())
@@ -71,9 +71,12 @@ func run(fn string, src string) {
 }
 
 func main() {
+
+	env := runtime.NewEnvironment(nil)
+
 	if len(os.Args) > 1 {
-		runFromFile(os.Args[1])
+		runFromFile(os.Args[1], env)
 	} else {
-		runFromRepl()
+		runFromRepl(env)
 	}
 }

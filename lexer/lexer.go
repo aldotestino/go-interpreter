@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-interpreter/shared"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -14,7 +15,7 @@ type Lexer struct {
 	currentChar     string
 }
 
-func NewLexer(fn, input string) *Lexer {
+func NewLexer(input string) *Lexer {
 	lex := &Lexer{
 		text:            strings.Split(input, ""),
 		currentPosition: -1,
@@ -43,6 +44,10 @@ func (lex *Lexer) isDigit(char string) bool {
 	return regexp.MustCompile(`^[0-9]+$`).MatchString(char)
 }
 
+func (lex *Lexer) isAlpha(char string) bool {
+	return regexp.MustCompile(`^[a-zA-Z_]+$`).MatchString(char)
+}
+
 func (lex *Lexer) makeNumber() *Token {
 	numString := ""
 	dotCount := 0
@@ -67,6 +72,21 @@ func (lex *Lexer) makeNumber() *Token {
 	}
 }
 
+func (lex *Lexer) makeIdentifier() *Token {
+	idString := ""
+
+	for lex.currentChar != "" && (lex.isAlpha(lex.currentChar) || lex.isDigit(lex.currentChar)) {
+		idString += lex.currentChar
+		lex.advance()
+	}
+
+	if slices.Contains(KEYWORDS, idString) {
+		return NewToken(KeywordTT, idString)
+	}
+
+	return NewToken(IdentifierTT, idString)
+}
+
 func (lex *Lexer) Tokenize() ([]*Token, error) {
 	tokens := make([]*Token, 0)
 
@@ -75,6 +95,8 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 			lex.advance()
 		} else if lex.isDigit(lex.currentChar) {
 			tokens = append(tokens, lex.makeNumber())
+		} else if lex.isAlpha(lex.currentChar) {
+			tokens = append(tokens, lex.makeIdentifier())
 		} else if lex.currentChar == "+" {
 			tokens = append(tokens, NewToken(PlusTT, lex.currentChar))
 			lex.advance()
@@ -89,6 +111,9 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 			lex.advance()
 		} else if lex.currentChar == "^" {
 			tokens = append(tokens, NewToken(PowerTT, lex.currentChar))
+			lex.advance()
+		} else if lex.currentChar == "=" {
+			tokens = append(tokens, NewToken(EqualsTT, lex.currentChar))
 			lex.advance()
 		} else if lex.currentChar == "(" {
 			tokens = append(tokens, NewToken(OpenParenTT, lex.currentChar))

@@ -5,9 +5,11 @@ import "go-interpreter/lexer"
 type NodeType string
 
 const (
-	NumberNT NodeType = "Number"
-	UnOpNT   NodeType = "UnOp"
-	BinOpNt  NodeType = "BinOp"
+	NumberNT    NodeType = "Number"
+	UnOpNT      NodeType = "UnOp"
+	BinOpNt     NodeType = "BinOp"
+	VarAccessNT NodeType = "VarAccess"
+	VarAssignNT NodeType = "VarAssign"
 )
 
 type AstNode interface {
@@ -71,5 +73,43 @@ func NewBinOpNode(l, r AstNode, o *lexer.Token) *BinOpNode {
 }
 
 func (n *BinOpNode) GetType() NodeType {
+	return n.Type
+}
+
+// VarAccessNode
+
+type VarAccessNode struct {
+	Type    NodeType
+	VarName *lexer.Token
+}
+
+func NewVarAccessNode(vn *lexer.Token) *VarAccessNode {
+	return &VarAccessNode{
+		Type:    VarAccessNT,
+		VarName: vn,
+	}
+}
+
+func (n *VarAccessNode) GetType() NodeType {
+	return n.Type
+}
+
+// VarAssignNode
+
+type VarAssignNode struct {
+	Type    NodeType
+	VarName *lexer.Token
+	Value   AstNode
+}
+
+func NewVarAssignNode(vn *lexer.Token, v AstNode) *VarAssignNode {
+	return &VarAssignNode{
+		Type:    VarAssignNT,
+		VarName: vn,
+		Value:   v,
+	}
+}
+
+func (n *VarAssignNode) GetType() NodeType {
 	return n.Type
 }

@@ -6,12 +6,13 @@ import (
 	"slices"
 )
 
-// expr  :  term ((PLUS|MINUS) term)*
+// expr  :  KEYWORD:var IDENTIFIER EQ expr
+//       :  term ((PLUS|MINUS) term)*
 // term  :  factor ((MUL|DIV) factor)*
 // factor:  (PLUS|MINUS) factor
 //       :  power
 // power :  atom (POW factor)*
-// atom  :  INT|FLOAT
+// atom  :  INT|FLOAT|IDENTIFIER
 //	     :  OpenParen expr CloseParen
 
 type Parser struct {
@@ -47,6 +48,9 @@ func (pars *Parser) atom() (AstNode, error) {
 	if token.Type == lexer.IntTT || token.Type == lexer.FloatTT {
 		pars.advance()
 		return NewNumberNode(token), nil
+	} else if token.Type == lexer.IdentifierTT {
+		pars.advance()
+		return NewVarAccessNode(token), nil
 	} else if token.Type == lexer.OpenParenTT {
 		pars.advance()
 		expr, err := pars.expr()
@@ -63,7 +67,15 @@ func (pars *Parser) atom() (AstNode, error) {
 		}
 	}
 
-	return nil, shared.InvalidSyntaxError("Expected int, float, '+', '-' or ')'")
+	var errMsg string
+
+	if pars.currentPosition > 1 { // we advanced, so we don't expect the 'var' keyword
+		errMsg = "Expected int, float, identifier, '+', '-' or ')'"
+	} else {
+		errMsg = "Expected int, float, identifier, 'var', '+', '-' or ')'"
+	}
+
+	return nil, shared.InvalidSyntaxError(errMsg)
 }
 
 func (pars *Parser) factor() (AstNode, error) {
@@ -114,6 +126,30 @@ func (pars *Parser) term() (AstNode, error) {
 }
 
 func (pars *Parser) expr() (AstNode, error) {
+	if pars.currentToken.Matches(lexer.KeywordTT, "var") {
+		pars.advance()
+
+		if pars.currentToken.Type != lexer.IdentifierTT {
+			return nil, shared.InvalidSyntaxError("Expected identifier")
+		}
+
+		varName := pars.currentToken
+		pars.advance()
+
+		if pars.currentToken.Type != lexer.EqualsTT {
+			return nil, shared.InvalidSyntaxError("Expected '='")
+		}
+
+		pars.advance()
+		expr, err := pars.expr()
+
+		if err != nil {
+			return nil, err
+		}
+
+		return NewVarAssignNode(varName, expr), nil
+	}
+
 	return pars.binOp(pars.term, pars.term, []lexer.TokenType{lexer.PlusTT, lexer.MinusTT})
 }
 
