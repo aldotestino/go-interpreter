@@ -5,9 +5,9 @@ import "go-interpreter/lexer"
 type NodeType string
 
 const (
-	NumberNT NodeType = "number"
-	UnOpNT   NodeType = "unop"
-	BinOpNt  NodeType = "binop"
+	NumberNT NodeType = "Number"
+	UnOpNT   NodeType = "UnOp"
+	BinOpNt  NodeType = "BinOp"
 )
 
 type AstNode interface {

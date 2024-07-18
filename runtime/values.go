@@ -3,7 +3,7 @@ package runtime
 type ValueType string
 
 const (
-	NumberVT ValueType = "number"
+	NumberVT ValueType = "Number"
 )
 
 type RuntimeValue interface {

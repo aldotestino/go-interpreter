@@ -1,10 +1,10 @@
 package runtime
 
 import (
-	"errors"
 	"go-interpreter/lexer"
 	"go-interpreter/parser"
 	"go-interpreter/shared"
+	"math"
 	"strconv"
 )
 
@@ -61,6 +61,8 @@ func (intr *Interpreter) visitBinOpNode(node *parser.BinOpNode) (RuntimeValue, e
 			return nil, shared.RuntimeError("Division by 0")
 		}
 		return NewNumberValue(lhs.(*NumberValue).Value / rhs.(*NumberValue).Value), nil
+	case lexer.PowerTT:
+		return NewNumberValue(math.Pow(lhs.(*NumberValue).Value, rhs.(*NumberValue).Value)), nil
 	default:
 		return nil, shared.RuntimeError("Unsupported operation")
 	}
@@ -75,6 +77,6 @@ func (intr *Interpreter) Visit(node parser.AstNode) (RuntimeValue, error) {
 	case parser.BinOpNt:
 		return intr.visitBinOpNode(node.(*parser.BinOpNode))
 	default:
-		return nil, errors.New("Somthing went wrong")
+		return nil, shared.RuntimeError("Unsupported node")
 	}
 }

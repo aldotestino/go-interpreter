@@ -5,11 +5,13 @@ import (
 	"go-interpreter/shared"
 )
 
-// expr: term ((PLUS|MINUS) term)*
-// term : factor ((MUL|DIV) factor)*
-// factor: INT|FLOAT
-//       : (PLUS|MINUS) factor
-//       : OpenParen expr CloseParen
+// expr  :  term ((PLUS|MINUS) term)*
+// term  :  factor ((MUL|DIV) factor)*
+// factor:  (PLUS|MINUS) factor
+//       :  power
+// power :  atom (POW factor)*
+// atom  :  INT|FLOAT
+//	     :  OpenParen expr CloseParen
 
 type Parser struct {
 	tokens          []*lexer.Token
@@ -38,19 +40,10 @@ func (pars *Parser) advance() *lexer.Token {
 	return pars.currentToken
 }
 
-func (pars *Parser) factor() (AstNode, error) {
+func (pars *Parser) atom() (AstNode, error) {
 	token := pars.currentToken
 
-	if token.Type == lexer.PlusTT || token.Type == lexer.MinusTT {
-		pars.advance()
-		factor, err := pars.factor()
-
-		if err != nil {
-			return nil, err
-		}
-
-		return NewUnOpNode(factor, token), nil
-	} else if token.Type == lexer.IntTT || token.Type == lexer.FloatTT {
+	if token.Type == lexer.IntTT || token.Type == lexer.FloatTT {
 		pars.advance()
 		return NewNumberNode(token), nil
 	} else if token.Type == lexer.OpenParenTT {
@@ -69,7 +62,46 @@ func (pars *Parser) factor() (AstNode, error) {
 		}
 	}
 
-	return nil, shared.InvalidSyntaxError("Expected int or float")
+	return nil, shared.InvalidSyntaxError("Expected int, float, '+', '-' or ')'")
+}
+
+func (pars *Parser) power() (AstNode, error) {
+	left, err := pars.atom()
+
+	if err != nil {
+		return nil, err
+	}
+
+	for pars.currentToken.Type == lexer.PowerTT {
+		opToken := pars.currentToken
+		pars.advance()
+		right, err := pars.factor()
+
+		if err != nil {
+			return nil, err
+		}
+
+		left = NewBinOpNode(left, right, opToken)
+	}
+
+	return left, nil
+}
+
+func (pars *Parser) factor() (AstNode, error) {
+	token := pars.currentToken
+
+	if token.Type == lexer.PlusTT || token.Type == lexer.MinusTT {
+		pars.advance()
+		factor, err := pars.factor()
+
+		if err != nil {
+			return nil, err
+		}
+
+		return NewUnOpNode(factor, token), nil
+	}
+
+	return pars.power()
 }
 
 func (pars *Parser) term() (AstNode, error) {
@@ -124,7 +156,7 @@ func (pars *Parser) Parse() (AstNode, error) {
 	}
 
 	if pars.currentToken.Type != lexer.EOFTT {
-		return nil, shared.InvalidSyntaxError("Expected '+', '-', '*', '/'")
+		return nil, shared.InvalidSyntaxError("Expected '+', '-', '*', '/', '^")
 	}
 
 	return res, nil

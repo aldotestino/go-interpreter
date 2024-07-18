@@ -9,6 +9,7 @@ const (
 	MinusTT      TokenType = "Minus"
 	MultiplyTT   TokenType = "Multiply"
 	DivideTT     TokenType = "Divide"
+	PowerTT      TokenType = "Power"
 	OpenParenTT  TokenType = "OpenParen"
 	CloseParenTT TokenType = "CloseParen"
 	EOFTT        TokenType = "EOF"
