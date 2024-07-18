@@ -3,6 +3,7 @@ package parser
 import (
 	"go-interpreter/lexer"
 	"go-interpreter/shared"
+	"slices"
 )
 
 // expr  :  term ((PLUS|MINUS) term)*
@@ -65,28 +66,6 @@ func (pars *Parser) atom() (AstNode, error) {
 	return nil, shared.InvalidSyntaxError("Expected int, float, '+', '-' or ')'")
 }
 
-func (pars *Parser) power() (AstNode, error) {
-	left, err := pars.atom()
-
-	if err != nil {
-		return nil, err
-	}
-
-	for pars.currentToken.Type == lexer.PowerTT {
-		opToken := pars.currentToken
-		pars.advance()
-		right, err := pars.factor()
-
-		if err != nil {
-			return nil, err
-		}
-
-		left = NewBinOpNode(left, right, opToken)
-	}
-
-	return left, nil
-}
-
 func (pars *Parser) factor() (AstNode, error) {
 	token := pars.currentToken
 
@@ -104,17 +83,17 @@ func (pars *Parser) factor() (AstNode, error) {
 	return pars.power()
 }
 
-func (pars *Parser) term() (AstNode, error) {
-	left, err := pars.factor()
+func (pars *Parser) binOp(lf, rf func() (AstNode, error), ops []lexer.TokenType) (AstNode, error) {
+	left, err := lf()
 
 	if err != nil {
 		return nil, err
 	}
 
-	for pars.currentToken.Type == lexer.MultiplyTT || pars.currentToken.Type == lexer.DivideTT {
+	for slices.Contains(ops, pars.currentToken.Type) {
 		opToken := pars.currentToken
 		pars.advance()
-		right, err := pars.factor()
+		right, err := rf()
 
 		if err != nil {
 			return nil, err
@@ -126,26 +105,16 @@ func (pars *Parser) term() (AstNode, error) {
 	return left, nil
 }
 
+func (pars *Parser) power() (AstNode, error) {
+	return pars.binOp(pars.atom, pars.factor, []lexer.TokenType{lexer.PowerTT})
+}
+
+func (pars *Parser) term() (AstNode, error) {
+	return pars.binOp(pars.factor, pars.factor, []lexer.TokenType{lexer.MultiplyTT, lexer.DivideTT})
+}
+
 func (pars *Parser) expr() (AstNode, error) {
-	left, err := pars.term()
-
-	if err != nil {
-		return nil, err
-	}
-
-	for pars.currentToken.Type == lexer.PlusTT || pars.currentToken.Type == lexer.MinusTT {
-		opToken := pars.currentToken
-		pars.advance()
-		right, err := pars.term()
-
-		if err != nil {
-			return nil, err
-		}
-
-		left = NewBinOpNode(left, right, opToken)
-	}
-
-	return left, nil
+	return pars.binOp(pars.term, pars.term, []lexer.TokenType{lexer.PlusTT, lexer.MinusTT})
 }
 
 func (pars *Parser) Parse() (AstNode, error) {

@@ -87,14 +87,14 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 		} else if lex.currentChar == "/" {
 			tokens = append(tokens, NewToken(DivideTT, lex.currentChar))
 			lex.advance()
+		} else if lex.currentChar == "^" {
+			tokens = append(tokens, NewToken(PowerTT, lex.currentChar))
+			lex.advance()
 		} else if lex.currentChar == "(" {
 			tokens = append(tokens, NewToken(OpenParenTT, lex.currentChar))
 			lex.advance()
-		} else if lex.currentChar == "/" {
+		} else if lex.currentChar == ")" {
 			tokens = append(tokens, NewToken(CloseParenTT, lex.currentChar))
-			lex.advance()
-		} else if lex.currentChar == "^" {
-			tokens = append(tokens, NewToken(PowerTT, lex.currentChar))
 			lex.advance()
 		} else {
 			cc := lex.currentChar
