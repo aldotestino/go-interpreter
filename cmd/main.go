@@ -50,18 +50,17 @@ func run(fn string, src string) {
 
 	if err != nil {
 		fmt.Println(err.Error())
-		os.Exit(1)
+	} else {
+		pars := parser.NewParser(tokens)
+		ast, err := pars.Parse()
+
+		if err != nil {
+			fmt.Println(err.Error())
+		} else {
+			utils.LogAsJSON("AST", ast)
+		}
 	}
 
-	pars := parser.NewParser(tokens)
-	ast := pars.Parse()
-
-	if ast.Error != nil {
-		fmt.Println(ast.Error.Error())
-		os.Exit(1)
-	}
-
-	utils.LogAsJSON("AST", ast)
 }
 
 func main() {

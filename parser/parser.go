@@ -1,8 +1,8 @@
 package parser
 
 import (
+	"go-interpreter/errors"
 	"go-interpreter/lexer"
-	"go-interpreter/shared"
 )
 
 // expr: term ((PLUS|MINUS) term)*
@@ -38,101 +38,95 @@ func (pars *Parser) advance() *lexer.Token {
 	return pars.currentToken
 }
 
-func (pars *Parser) factor() *ParseResult {
-	res := NewParseResult()
+func (pars *Parser) factor() (AstNode, error) {
 	token := pars.currentToken
 
 	if token.Type == lexer.PlusTT || token.Type == lexer.MinusTT {
-		// res.register(pars.advance()) // for now it does nothing
 		pars.advance()
-		factor := res.register(pars.factor())
+		factor, err := pars.factor()
 
-		if res.Error != nil {
-			return res
+		if err != nil {
+			return nil, err
 		}
 
-		return res.success(NewUnOpNode(factor, token))
+		return NewUnOpNode(factor, token), nil
 	} else if token.Type == lexer.IntTT || token.Type == lexer.FloatTT {
-		//res.register(pars.advance()) // for now it does nothing
 		pars.advance()
-		return res.success(NewNumberNode(token))
+		return NewNumberNode(token), nil
 	} else if token.Type == lexer.OpenParenTT {
-		// res.register(pars.advanace())
 		pars.advance()
 
-		expr := res.register(pars.expr())
+		expr, err := pars.expr()
 
-		if res.Error != nil {
-			return res
+		if err != nil {
+			return nil, err
 		}
 
 		if pars.currentToken.Type == lexer.CloseParenTT {
-			// res.register(pars.advance())
 			pars.advance()
-
-			return res.success(expr)
+			return expr, nil
 		} else {
-			return res.failure(shared.InvalidSyntaxError(pars.currentToken.PosStart, pars.currentToken.PosEnd, "Expected ')'"))
+			return nil, errors.InvalidSyntaxError("Expected ')'")
 		}
 	}
 
-	return res.failure(shared.InvalidSyntaxError(token.PosStart, token.PosEnd, "Expected int or float"))
+	return nil, errors.InvalidSyntaxError("Expected int or float")
 }
 
-func (pars *Parser) term() *ParseResult {
-	res := NewParseResult()
-	left := res.register(pars.factor())
+func (pars *Parser) term() (AstNode, error) {
+	left, err := pars.factor()
 
-	if res.Error != nil {
-		return res
+	if err != nil {
+		return nil, err
 	}
 
 	for pars.currentToken.Type == lexer.MultiplyTT || pars.currentToken.Type == lexer.DivideTT {
 		opToken := pars.currentToken
-		//res.register(pars.advance()) // for now it does nothing
 		pars.advance()
-		right := res.register(pars.factor())
+		right, err := pars.factor()
 
-		if res.Error != nil {
-			return res
+		if err != nil {
+			return nil, err
 		}
 
 		left = NewBinOpNode(left, right, opToken)
 	}
 
-	return res.success(left)
+	return left, nil
 }
 
-func (pars *Parser) expr() *ParseResult {
-	res := NewParseResult()
-	left := res.register(pars.term())
+func (pars *Parser) expr() (AstNode, error) {
+	left, err := pars.term()
 
-	if res.Error != nil {
-		return res
+	if err != nil {
+		return nil, err
 	}
 
 	for pars.currentToken.Type == lexer.PlusTT || pars.currentToken.Type == lexer.MinusTT {
 		opToken := pars.currentToken
-		//res.register(pars.advance()) // for now it does nothing
 		pars.advance()
-		right := res.register(pars.term())
+		right, err := pars.term()
 
-		if res.Error != nil {
-			return res
+		if err != nil {
+			return nil, err
 		}
 
 		left = NewBinOpNode(left, right, opToken)
 	}
 
-	return res.success(left)
+	return left, nil
 }
 
-func (pars *Parser) Parse() *ParseResult {
-	res := pars.expr()
+func (pars *Parser) Parse() (AstNode, error) {
+	res, err := pars.expr()
 
-	if res.Error == nil && pars.currentToken.Type != lexer.EOFTT {
-		return res.failure(shared.InvalidSyntaxError(pars.currentToken.PosStart, pars.currentToken.PosEnd, "Expected '+', '-', '*', '/'"))
+	if err != nil {
+		return nil, err
 	}
 
-	return res
+	if pars.currentToken.Type != lexer.EOFTT {
+		return nil, errors.InvalidSyntaxError("Expected '+', '-', '*', '/'")
+	}
+
+	return res, nil
 }

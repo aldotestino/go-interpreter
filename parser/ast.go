@@ -5,54 +5,13 @@ import "go-interpreter/lexer"
 type NodeType string
 
 const (
-	NumberNT      NodeType = "number"
-	UnOpNT        NodeType = "unop"
-	BinOpNt       NodeType = "binop"
-	ParseResultNT NodeType = "parse_result"
+	NumberNT NodeType = "number"
+	UnOpNT   NodeType = "unop"
+	BinOpNt  NodeType = "binop"
 )
 
 type AstNode interface {
 	GetType() NodeType
-}
-
-// ParseResult
-
-type ParseResult struct {
-	Type  NodeType
-	Error error
-	Node  AstNode
-}
-
-func NewParseResult() *ParseResult {
-	return &ParseResult{
-		Type:  ParseResultNT,
-		Error: nil,
-		Node:  nil,
-	}
-}
-
-func (pr *ParseResult) GetType() NodeType {
-	return pr.Type
-}
-
-func (pr *ParseResult) register(res AstNode) AstNode {
-	if res.GetType() == ParseResultNT {
-		if res.(*ParseResult).Error != nil {
-			pr.Error = res.(*ParseResult).Error
-		}
-		return res.(*ParseResult).Node
-	}
-	return res
-}
-
-func (pr *ParseResult) success(node AstNode) *ParseResult {
-	pr.Node = node
-	return pr
-}
-
-func (pr *ParseResult) failure(err error) *ParseResult {
-	pr.Error = err
-	return pr
 }
 
 // NumerNode

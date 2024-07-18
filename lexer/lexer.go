@@ -2,7 +2,7 @@ package lexer
 
 import (
 	"fmt"
-	"go-interpreter/shared"
+	"go-interpreter/errors"
 	"regexp"
 	"strings"
 )
@@ -22,45 +22,28 @@ const (
 )
 
 type Token struct {
-	Type     TokenType
-	Value    string
-	PosStart *shared.Position
-	PosEnd   *shared.Position
+	Type  TokenType
+	Value string
 }
 
-func NewToken(tokenType TokenType, value string, posStart, posEnd *shared.Position) *Token {
-	tok := &Token{
-		Type:     tokenType,
-		Value:    value,
-		PosStart: nil,
-		PosEnd:   nil,
+func NewToken(tokenType TokenType, value string) *Token {
+	return &Token{
+		Type:  tokenType,
+		Value: value,
 	}
-
-	if posStart != nil {
-		tok.PosStart = posStart.Copy()
-		tok.PosEnd = posStart.Copy()
-		tok.PosEnd.Advance("")
-	}
-
-	if posEnd != nil {
-		tok.PosEnd = posEnd.Copy()
-	}
-
-	return tok
 }
 
 type Lexer struct {
 	fn              string
 	text            []string
-	currentPosition *shared.Position
+	currentPosition int
 	currentChar     string
 }
 
 func NewLexer(fn, input string) *Lexer {
 	lex := &Lexer{
-		fn:              fn,
 		text:            strings.Split(input, ""),
-		currentPosition: shared.NewPosition(-1, 0, -1, fn, input),
+		currentPosition: -1,
 		currentChar:     "",
 	}
 	lex.advance()
@@ -69,9 +52,10 @@ func NewLexer(fn, input string) *Lexer {
 }
 
 func (lex *Lexer) advance() {
-	lex.currentPosition.Advance(lex.currentChar)
-	if lex.currentPosition.Idx < len(lex.text) {
-		lex.currentChar = lex.text[lex.currentPosition.Idx]
+	lex.currentPosition++
+
+	if lex.currentPosition < len(lex.text) {
+		lex.currentChar = lex.text[lex.currentPosition]
 	} else {
 		lex.currentChar = ""
 	}
@@ -89,8 +73,6 @@ func (lex *Lexer) makeNumber() *Token {
 	numString := ""
 	dotCount := 0
 
-	posStart := lex.currentPosition.Copy()
-
 	for lex.currentChar != "" && (lex.isDigit(lex.currentChar) || lex.currentChar == ".") {
 		if lex.currentChar == "." {
 			if dotCount == 1 {
@@ -105,9 +87,9 @@ func (lex *Lexer) makeNumber() *Token {
 	}
 
 	if dotCount == 0 {
-		return NewToken(IntTT, numString, posStart, lex.currentPosition)
+		return NewToken(IntTT, numString)
 	} else {
-		return NewToken(FloatTT, numString, posStart, lex.currentPosition)
+		return NewToken(FloatTT, numString)
 	}
 }
 
@@ -120,32 +102,31 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 		} else if lex.isDigit(lex.currentChar) {
 			tokens = append(tokens, lex.makeNumber())
 		} else if lex.currentChar == "+" {
-			tokens = append(tokens, NewToken(PlusTT, lex.currentChar, lex.currentPosition, nil))
+			tokens = append(tokens, NewToken(PlusTT, lex.currentChar))
 			lex.advance()
 		} else if lex.currentChar == "-" {
-			tokens = append(tokens, NewToken(MinusTT, lex.currentChar, lex.currentPosition, nil))
+			tokens = append(tokens, NewToken(MinusTT, lex.currentChar))
 			lex.advance()
 		} else if lex.currentChar == "*" {
-			tokens = append(tokens, NewToken(MultiplyTT, lex.currentChar, lex.currentPosition, nil))
+			tokens = append(tokens, NewToken(MultiplyTT, lex.currentChar))
 			lex.advance()
 		} else if lex.currentChar == "/" {
-			tokens = append(tokens, NewToken(DivideTT, lex.currentChar, lex.currentPosition, nil))
+			tokens = append(tokens, NewToken(DivideTT, lex.currentChar))
 			lex.advance()
 		} else if lex.currentChar == "(" {
-			tokens = append(tokens, NewToken(OpenParenTT, lex.currentChar, lex.currentPosition, nil))
+			tokens = append(tokens, NewToken(OpenParenTT, lex.currentChar))
 			lex.advance()
 		} else if lex.currentChar == "/" {
-			tokens = append(tokens, NewToken(CloseParenTT, lex.currentChar, lex.currentPosition, nil))
+			tokens = append(tokens, NewToken(CloseParenTT, lex.currentChar))
 			lex.advance()
 		} else {
-			posStart := lex.currentPosition.Copy()
 			cc := lex.currentChar
 			lex.advance()
-			return nil, shared.IllegalCharError(posStart, lex.currentPosition, fmt.Sprintf("'%s'", cc))
+			return nil, errors.IllegalCharError(fmt.Sprintf("'%s'", cc))
 		}
 
 	}
 
-	tokens = append(tokens, NewToken(EOFTT, "", lex.currentPosition, nil))
+	tokens = append(tokens, NewToken(EOFTT, ""))
 	return tokens, nil
 }
