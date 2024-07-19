@@ -8,19 +8,31 @@ import (
 
 // expr      : KEYWORD:var IDENTIFIER EQ expr
 //           : comp ((KEYWORD:and|KEYWORD:or) comp)*
+
 // comp      : KEYWORD:not comp
 //           : mathExpr ((EE|NE|LT|LTE|GT|GTE) mathExpr)*
+
 // mathExpr-expr : term ((PLUS|MINUS) term)*
+
 // term      : factor ((MUL|DIV) factor)*
+
 // factor    : (PLUS|MINUS) factor
 //           : powerExpr
+
 // powerExpr-expr: atom (POW factor)*
+
 // atom      : INT|FLOAT|IDENTIFIER
 //	         : OpenParen expr CloseParen
 //           : if-expr
+
 // if-expr   : KEYOWRD:if expr KEYWORD:then expr
 //           : (KEYWORD:elif expr KEYWORD:then expr)*
 //           : (KEYWORD: else expr)?
+
+// for-expr  : KEYWORD:for IDENTIFIER EQ expr KEYWORD:to expr
+//           : (KEYWORD:step expr)? KEYWORD:then expr
+
+// while-expr: KEYWORD:while expr KEYWORD:then expr
 
 type Parser struct {
 	tokens          []*lexer.Token
@@ -47,6 +59,96 @@ func (pars *Parser) advance() *lexer.Token {
 	}
 
 	return pars.currentToken
+}
+
+func (pars *Parser) forExpr() (AstNode, error) {
+	if !pars.currentToken.Matches(lexer.KeywordTT, "for") {
+		return nil, shared.InvalidSyntaxError("Expected 'for'")
+	}
+
+	pars.advance()
+
+	if pars.currentToken.Type != lexer.IdentifierTT {
+		return nil, shared.InvalidSyntaxError("Expected identifier")
+	}
+
+	varName := pars.currentToken
+	pars.advance()
+
+	if pars.currentToken.Type != lexer.EqualsTT {
+		return nil, shared.InvalidSyntaxError("Expected '='")
+	}
+
+	pars.advance()
+
+	startValue, err := pars.expr()
+	if err != nil {
+		return nil, err
+	}
+
+	if !pars.currentToken.Matches(lexer.KeywordTT, "to") {
+		return nil, shared.InvalidSyntaxError("Expected 'to'")
+	}
+
+	pars.advance()
+
+	endValue, err := pars.expr()
+	if err != nil {
+		return nil, err
+	}
+
+	var stepValue AstNode = nil
+
+	if pars.currentToken.Matches(lexer.KeywordTT, "step") {
+		pars.advance()
+		stepValue, err = pars.expr()
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if !pars.currentToken.Matches(lexer.KeywordTT, "then") {
+		return nil, shared.InvalidSyntaxError("Expected 'then'")
+	}
+
+	pars.advance()
+
+	body, err := pars.expr()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewForNode(varName, startValue, endValue, stepValue, body), nil
+}
+
+func (pars *Parser) whileExpr() (AstNode, error) {
+
+	if !pars.currentToken.Matches(lexer.KeywordTT, "while") {
+		return nil, shared.InvalidSyntaxError("Expected 'while'")
+	}
+
+	pars.advance()
+
+	condition, err := pars.expr()
+	if err != nil {
+		return nil, err
+	}
+
+	if !pars.currentToken.Matches(lexer.KeywordTT, "then") {
+		return nil, shared.InvalidSyntaxError("Expected 'then'")
+	}
+
+	pars.advance()
+
+	body, err := pars.expr()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewWhileNode(condition, body), nil
 }
 
 func (pars *Parser) ifExpr() (AstNode, error) {
@@ -134,11 +236,11 @@ func (pars *Parser) atom() (AstNode, error) {
 			return nil, shared.InvalidSyntaxError("Expected ')'")
 		}
 	} else if token.Matches(lexer.KeywordTT, "if") {
-		ifExpr, err := pars.ifExpr()
-		if err != nil {
-			return nil, err
-		}
-		return ifExpr, nil
+		return pars.ifExpr()
+	} else if token.Matches(lexer.KeywordTT, "for") {
+		return pars.forExpr()
+	} else if token.Matches(lexer.KeywordTT, "while") {
+		return pars.whileExpr()
 	}
 
 	var errMsg string

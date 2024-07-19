@@ -132,6 +132,71 @@ func (intr *Interpreter) visitIfNode(node *parser.IfNode, env *Environment) (Run
 	return nil, nil
 }
 
+func (intr *Interpreter) visitForNode(node *parser.ForNode, env *Environment) (RuntimeValue, error) {
+	startValue, err := intr.Visit(node.StartValue, env)
+	if err != nil {
+		return nil, err
+	}
+	endValue, err := intr.Visit(node.EndValue, env)
+	if err != nil {
+		return nil, err
+	}
+
+	stepValue := NewNumberValue(1)
+
+	if node.StepValue != nil {
+		sv, err := intr.Visit(node.StepValue, env)
+		if err != nil {
+			return nil, err
+		}
+		stepValue = sv.(*NumberValue)
+	}
+
+	i := startValue.(*NumberValue).Value
+
+	var condition = func() bool {
+		return i < endValue.(*NumberValue).Value
+	}
+
+	if stepValue.Value < 0 {
+		condition = func() bool {
+			return i > endValue.(*NumberValue).Value
+		}
+	}
+
+	for condition() {
+		env.Set(node.VarName.Value, NewNumberValue(i))
+		i += stepValue.Value
+
+		_, err := intr.Visit(node.Body, env)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, nil
+}
+
+func (intr *Interpreter) visitWhileNode(node *parser.WhileNode, env *Environment) (RuntimeValue, error) {
+	for {
+		condition, err := intr.Visit(node.Condition, env)
+		if err != nil {
+			return nil, err
+		}
+
+		if condition.GetValue() != 1.0 {
+			break
+		}
+
+		_, err = intr.Visit(node.Body, env)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, nil
+}
+
 func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeValue, error) {
 	switch node.GetType() {
 	case parser.NumberNT:
@@ -146,6 +211,10 @@ func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeVa
 		return intr.visitVarAssignNode(node.(*parser.VarAssignNode), env)
 	case parser.IfNT:
 		return intr.visitIfNode(node.(*parser.IfNode), env)
+	case parser.ForNT:
+		return intr.visitForNode(node.(*parser.ForNode), env)
+	case parser.WhileNT:
+		return intr.visitWhileNode(node.(*parser.WhileNode), env)
 	default:
 		return nil, shared.RuntimeError("Unsupported node")
 	}

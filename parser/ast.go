@@ -11,6 +11,8 @@ const (
 	VarAccessNT NodeType = "VarAccess"
 	VarAssignNT NodeType = "VarAssign"
 	IfNT        NodeType = "If"
+	ForNT       NodeType = "For"
+	WhileNT     NodeType = "While"
 )
 
 type AstNode interface {
@@ -132,5 +134,51 @@ func NewIfNode(c [][]AstNode, e AstNode) *IfNode {
 }
 
 func (n *IfNode) GetType() NodeType {
+	return n.Type
+}
+
+// ForNode
+
+type ForNode struct {
+	Type       NodeType
+	VarName    *lexer.Token
+	StartValue AstNode
+	EndValue   AstNode
+	StepValue  AstNode
+	Body       AstNode
+}
+
+func NewForNode(vn *lexer.Token, s, e, st, b AstNode) *ForNode {
+	return &ForNode{
+		Type:       ForNT,
+		VarName:    vn,
+		StartValue: s,
+		EndValue:   e,
+		StepValue:  st,
+		Body:       b,
+	}
+}
+
+func (n *ForNode) GetType() NodeType {
+	return n.Type
+}
+
+// WhileNode
+
+type WhileNode struct {
+	Type      NodeType
+	Condition AstNode
+	Body      AstNode
+}
+
+func NewWhileNode(c, b AstNode) *WhileNode {
+	return &WhileNode{
+		Type:      WhileNT,
+		Condition: c,
+		Body:      b,
+	}
+}
+
+func (n *WhileNode) GetType() NodeType {
 	return n.Type
 }
