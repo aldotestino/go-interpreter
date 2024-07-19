@@ -9,8 +9,7 @@ import (
 	"strconv"
 )
 
-type Interpreter struct {
-}
+type Interpreter struct{}
 
 func NewInterpreter() *Interpreter {
 	return &Interpreter{}
@@ -113,6 +112,26 @@ func (intr *Interpreter) visitVarAssignNode(node *parser.VarAssignNode, env *Env
 	return value, nil
 }
 
+func (intr *Interpreter) visitIfNode(node *parser.IfNode, env *Environment) (RuntimeValue, error) {
+	for _, c := range node.Cases {
+
+		conditionValue, err := intr.Visit(c[0], env)
+		if err != nil {
+			return nil, err
+		}
+
+		if conditionValue.GetValue() == 1.0 {
+			return intr.Visit(c[1], env)
+		}
+	}
+
+	if node.ElseCase != nil {
+		return intr.Visit(node.ElseCase, env)
+	}
+
+	return nil, nil
+}
+
 func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeValue, error) {
 	switch node.GetType() {
 	case parser.NumberNT:
@@ -125,6 +144,8 @@ func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeVa
 		return intr.visitVarAccessNode(node.(*parser.VarAccessNode), env)
 	case parser.VarAssignNT:
 		return intr.visitVarAssignNode(node.(*parser.VarAssignNode), env)
+	case parser.IfNT:
+		return intr.visitIfNode(node.(*parser.IfNode), env)
 	default:
 		return nil, shared.RuntimeError("Unsupported node")
 	}

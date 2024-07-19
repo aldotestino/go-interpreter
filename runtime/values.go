@@ -11,7 +11,7 @@ type RuntimeValue interface {
 	GetValue() any
 }
 
-// IntValue
+// NumberValue
 
 type NumberValue struct {
 	Type  ValueType

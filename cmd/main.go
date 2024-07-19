@@ -62,7 +62,7 @@ func run(src string, env *runtime.Environment) {
 
 			if err != nil {
 				fmt.Println(err.Error())
-			} else {
+			} else if res != nil {
 				fmt.Println(res.GetValue())
 			}
 		}

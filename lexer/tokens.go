@@ -40,4 +40,4 @@ func (t *Token) Matches(tt TokenType, v string) bool {
 	return t.Type == tt && t.Value == v
 }
 
-var KEYWORDS = []string{"var", "and", "or", "not"}
+var KEYWORDS = []string{"var", "and", "or", "not", "if", "then", "elif", "else"}

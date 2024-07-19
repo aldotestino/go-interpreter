@@ -6,17 +6,21 @@ import (
 	"slices"
 )
 
-// expr  :  KEYWORD:var IDENTIFIER EQ expr
-//       :  comp ((KEYWORD:and|KEYWORD:or) comp)*
-// comp  :  KEYWORD:not comp
-//       :  math ((EE|NE|LT|LTE|GT|GTE) math)*
-// math  :  term ((PLUS|MINUS) term)*
-// term  :  factor ((MUL|DIV) factor)*
-// factor:  (PLUS|MINUS) factor
-//       :  power
-// power :  atom (POW factor)*
-// atom  :  INT|FLOAT|IDENTIFIER
-//	     :  OpenParen expr CloseParen
+// expr      : KEYWORD:var IDENTIFIER EQ expr
+//           : comp ((KEYWORD:and|KEYWORD:or) comp)*
+// comp      : KEYWORD:not comp
+//           : mathExpr ((EE|NE|LT|LTE|GT|GTE) mathExpr)*
+// mathExpr-expr : term ((PLUS|MINUS) term)*
+// term      : factor ((MUL|DIV) factor)*
+// factor    : (PLUS|MINUS) factor
+//           : powerExpr
+// powerExpr-expr: atom (POW factor)*
+// atom      : INT|FLOAT|IDENTIFIER
+//	         : OpenParen expr CloseParen
+//           : if-expr
+// if-expr   : KEYOWRD:if expr KEYWORD:then expr
+//           : (KEYWORD:elif expr KEYWORD:then expr)*
+//           : (KEYWORD: else expr)?
 
 type Parser struct {
 	tokens          []*lexer.Token
@@ -45,6 +49,67 @@ func (pars *Parser) advance() *lexer.Token {
 	return pars.currentToken
 }
 
+func (pars *Parser) ifExpr() (AstNode, error) {
+	var cases = make([][]AstNode, 0)
+	var elseCase AstNode = nil
+
+	if !pars.currentToken.Matches(lexer.KeywordTT, "if") {
+		return nil, shared.InvalidSyntaxError("Expected 'if'")
+	}
+
+	pars.advance()
+
+	condition, err := pars.expr()
+	if err != nil {
+		return nil, err
+	}
+
+	if !pars.currentToken.Matches(lexer.KeywordTT, "then") {
+		return nil, shared.InvalidSyntaxError("Expected 'then'")
+	}
+
+	pars.advance()
+
+	expr, err := pars.expr()
+	if err != nil {
+		return nil, err
+	}
+	cases = append(cases, []AstNode{condition, expr})
+
+	for pars.currentToken.Matches(lexer.KeywordTT, "elif") {
+		pars.advance()
+
+		condition, err = pars.expr()
+		if err != nil {
+			return nil, err
+		}
+
+		if !pars.currentToken.Matches(lexer.KeywordTT, "then") {
+			return nil, shared.InvalidSyntaxError("Expected 'then'")
+		}
+
+		pars.advance()
+
+		expr, err = pars.expr()
+		if err != nil {
+			return nil, err
+		}
+
+		cases = append(cases, []AstNode{condition, expr})
+	}
+
+	if pars.currentToken.Matches(lexer.KeywordTT, "else") {
+		pars.advance()
+
+		elseCase, err = pars.expr()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return NewIfNode(cases, elseCase), nil
+}
+
 func (pars *Parser) atom() (AstNode, error) {
 	token := pars.currentToken
 
@@ -68,6 +133,12 @@ func (pars *Parser) atom() (AstNode, error) {
 		} else {
 			return nil, shared.InvalidSyntaxError("Expected ')'")
 		}
+	} else if token.Matches(lexer.KeywordTT, "if") {
+		ifExpr, err := pars.ifExpr()
+		if err != nil {
+			return nil, err
+		}
+		return ifExpr, nil
 	}
 
 	var errMsg string
@@ -95,7 +166,7 @@ func (pars *Parser) factor() (AstNode, error) {
 		return NewUnOpNode(factor, token), nil
 	}
 
-	return pars.power()
+	return pars.powerExpr()
 }
 
 func (pars *Parser) binOp(lf, rf func() (AstNode, error), cond func(t *lexer.Token) bool) (AstNode, error) {
@@ -120,7 +191,7 @@ func (pars *Parser) binOp(lf, rf func() (AstNode, error), cond func(t *lexer.Tok
 	return left, nil
 }
 
-func (pars *Parser) math() (AstNode, error) {
+func (pars *Parser) mathExpr() (AstNode, error) {
 	return pars.binOp(pars.term, pars.term, func(t *lexer.Token) bool {
 		return slices.Contains([]lexer.TokenType{lexer.PlusTT, lexer.MinusTT}, t.Type)
 	})
@@ -140,12 +211,12 @@ func (pars *Parser) comp() (AstNode, error) {
 		return NewUnOpNode(node, opToken), nil
 	}
 
-	return pars.binOp(pars.math, pars.math, func(t *lexer.Token) bool {
+	return pars.binOp(pars.mathExpr, pars.mathExpr, func(t *lexer.Token) bool {
 		return slices.Contains([]lexer.TokenType{lexer.DoubleEqualsTT, lexer.NotEqualsTT, lexer.LessThanTT, lexer.LessThanEqualsTT, lexer.GreaterThanTT, lexer.GreaterThanEqualsTT}, t.Type)
 	})
 }
 
-func (pars *Parser) power() (AstNode, error) {
+func (pars *Parser) powerExpr() (AstNode, error) {
 	return pars.binOp(pars.atom, pars.factor, func(t *lexer.Token) bool {
 		return t.Type == lexer.PowerTT
 	})
@@ -153,7 +224,7 @@ func (pars *Parser) power() (AstNode, error) {
 
 func (pars *Parser) term() (AstNode, error) {
 	return pars.binOp(pars.factor, pars.factor, func(t *lexer.Token) bool {
-		return slices.Contains([]lexer.TokenType{lexer.PlusTT, lexer.MinusTT}, t.Type)
+		return slices.Contains([]lexer.TokenType{lexer.MultiplyTT, lexer.DivideTT}, t.Type)
 	})
 }
 
@@ -195,7 +266,7 @@ func (pars *Parser) Parse() (AstNode, error) {
 	}
 
 	if pars.currentToken.Type != lexer.EOFTT {
-		return nil, shared.InvalidSyntaxError("Expected '+', '-', '*', '/', '^")
+		return nil, shared.InvalidSyntaxError("Expected '+', '-', '*', '/', '^'")
 	}
 
 	return res, nil

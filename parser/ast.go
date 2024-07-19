@@ -10,6 +10,7 @@ const (
 	BinOpNt     NodeType = "BinOp"
 	VarAccessNT NodeType = "VarAccess"
 	VarAssignNT NodeType = "VarAssign"
+	IfNT        NodeType = "If"
 )
 
 type AstNode interface {
@@ -111,5 +112,25 @@ func NewVarAssignNode(vn *lexer.Token, v AstNode) *VarAssignNode {
 }
 
 func (n *VarAssignNode) GetType() NodeType {
+	return n.Type
+}
+
+// IfNode
+
+type IfNode struct {
+	Type     NodeType
+	Cases    [][]AstNode
+	ElseCase AstNode
+}
+
+func NewIfNode(c [][]AstNode, e AstNode) *IfNode {
+	return &IfNode{
+		Type:     IfNT,
+		Cases:    c,
+		ElseCase: e,
+	}
+}
+
+func (n *IfNode) GetType() NodeType {
 	return n.Type
 }
