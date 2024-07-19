@@ -3,7 +3,6 @@ package runtime
 import (
 	"go-interpreter/lexer"
 	"go-interpreter/parser"
-	"go-interpreter/shared"
 	"go-interpreter/utils"
 	"math"
 	"strconv"
@@ -18,7 +17,7 @@ func NewInterpreter() *Interpreter {
 func (intr *Interpreter) visitNumberNode(node *parser.NumberNode) (RuntimeValue, error) {
 	v, err := strconv.ParseFloat(node.Token.Value, 64)
 	if err != nil {
-		return nil, shared.RuntimeError("invalid number")
+		return nil, utils.RuntimeError("invalid number")
 	}
 	return NewNumberValue(v), nil
 }
@@ -64,7 +63,7 @@ func (intr *Interpreter) visitBinOpNode(node *parser.BinOpNode, env *Environment
 		return NewNumberValue(lhs.(*NumberValue).Value * rhs.(*NumberValue).Value), nil
 	} else if node.Operation.Type == lexer.DivideTT {
 		if rhs.(*NumberValue).Value == 0 {
-			return nil, shared.RuntimeError("Division by 0")
+			return nil, utils.RuntimeError("Division by 0")
 		}
 		return NewNumberValue(lhs.(*NumberValue).Value / rhs.(*NumberValue).Value), nil
 	} else if node.Operation.Type == lexer.PowerTT {
@@ -86,7 +85,7 @@ func (intr *Interpreter) visitBinOpNode(node *parser.BinOpNode, env *Environment
 	} else if node.Operation.Matches(lexer.KeywordTT, "or") {
 		return NewNumberValue(utils.OrNumbers(lhs.(*NumberValue).Value, rhs.(*NumberValue).Value)), nil
 	}
-	return nil, shared.RuntimeError("Unsupported operation")
+	return nil, utils.RuntimeError("Unsupported operation")
 }
 
 func (intr *Interpreter) visitVarAccessNode(node *parser.VarAccessNode, env *Environment) (RuntimeValue, error) {
@@ -216,6 +215,6 @@ func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeVa
 	case parser.WhileNT:
 		return intr.visitWhileNode(node.(*parser.WhileNode), env)
 	default:
-		return nil, shared.RuntimeError("Unsupported node")
+		return nil, utils.RuntimeError("Unsupported node")
 	}
 }

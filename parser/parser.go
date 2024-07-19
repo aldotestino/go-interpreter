@@ -2,7 +2,7 @@ package parser
 
 import (
 	"go-interpreter/lexer"
-	"go-interpreter/shared"
+	"go-interpreter/utils"
 	"slices"
 )
 
@@ -63,20 +63,20 @@ func (pars *Parser) advance() *lexer.Token {
 
 func (pars *Parser) forExpr() (AstNode, error) {
 	if !pars.currentToken.Matches(lexer.KeywordTT, "for") {
-		return nil, shared.InvalidSyntaxError("Expected 'for'")
+		return nil, utils.InvalidSyntaxError("Expected 'for'")
 	}
 
 	pars.advance()
 
 	if pars.currentToken.Type != lexer.IdentifierTT {
-		return nil, shared.InvalidSyntaxError("Expected identifier")
+		return nil, utils.InvalidSyntaxError("Expected identifier")
 	}
 
 	varName := pars.currentToken
 	pars.advance()
 
 	if pars.currentToken.Type != lexer.EqualsTT {
-		return nil, shared.InvalidSyntaxError("Expected '='")
+		return nil, utils.InvalidSyntaxError("Expected '='")
 	}
 
 	pars.advance()
@@ -87,7 +87,7 @@ func (pars *Parser) forExpr() (AstNode, error) {
 	}
 
 	if !pars.currentToken.Matches(lexer.KeywordTT, "to") {
-		return nil, shared.InvalidSyntaxError("Expected 'to'")
+		return nil, utils.InvalidSyntaxError("Expected 'to'")
 	}
 
 	pars.advance()
@@ -109,7 +109,7 @@ func (pars *Parser) forExpr() (AstNode, error) {
 	}
 
 	if !pars.currentToken.Matches(lexer.KeywordTT, "then") {
-		return nil, shared.InvalidSyntaxError("Expected 'then'")
+		return nil, utils.InvalidSyntaxError("Expected 'then'")
 	}
 
 	pars.advance()
@@ -126,7 +126,7 @@ func (pars *Parser) forExpr() (AstNode, error) {
 func (pars *Parser) whileExpr() (AstNode, error) {
 
 	if !pars.currentToken.Matches(lexer.KeywordTT, "while") {
-		return nil, shared.InvalidSyntaxError("Expected 'while'")
+		return nil, utils.InvalidSyntaxError("Expected 'while'")
 	}
 
 	pars.advance()
@@ -137,7 +137,7 @@ func (pars *Parser) whileExpr() (AstNode, error) {
 	}
 
 	if !pars.currentToken.Matches(lexer.KeywordTT, "then") {
-		return nil, shared.InvalidSyntaxError("Expected 'then'")
+		return nil, utils.InvalidSyntaxError("Expected 'then'")
 	}
 
 	pars.advance()
@@ -156,7 +156,7 @@ func (pars *Parser) ifExpr() (AstNode, error) {
 	var elseCase AstNode = nil
 
 	if !pars.currentToken.Matches(lexer.KeywordTT, "if") {
-		return nil, shared.InvalidSyntaxError("Expected 'if'")
+		return nil, utils.InvalidSyntaxError("Expected 'if'")
 	}
 
 	pars.advance()
@@ -167,7 +167,7 @@ func (pars *Parser) ifExpr() (AstNode, error) {
 	}
 
 	if !pars.currentToken.Matches(lexer.KeywordTT, "then") {
-		return nil, shared.InvalidSyntaxError("Expected 'then'")
+		return nil, utils.InvalidSyntaxError("Expected 'then'")
 	}
 
 	pars.advance()
@@ -187,7 +187,7 @@ func (pars *Parser) ifExpr() (AstNode, error) {
 		}
 
 		if !pars.currentToken.Matches(lexer.KeywordTT, "then") {
-			return nil, shared.InvalidSyntaxError("Expected 'then'")
+			return nil, utils.InvalidSyntaxError("Expected 'then'")
 		}
 
 		pars.advance()
@@ -233,7 +233,7 @@ func (pars *Parser) atom() (AstNode, error) {
 			pars.advance()
 			return expr, nil
 		} else {
-			return nil, shared.InvalidSyntaxError("Expected ')'")
+			return nil, utils.InvalidSyntaxError("Expected ')'")
 		}
 	} else if token.Matches(lexer.KeywordTT, "if") {
 		return pars.ifExpr()
@@ -251,7 +251,7 @@ func (pars *Parser) atom() (AstNode, error) {
 		errMsg = "Expected int, float, identifier, 'var', '+', '-', ')' or '!'"
 	}
 
-	return nil, shared.InvalidSyntaxError(errMsg)
+	return nil, utils.InvalidSyntaxError(errMsg)
 }
 
 func (pars *Parser) factor() (AstNode, error) {
@@ -335,14 +335,14 @@ func (pars *Parser) expr() (AstNode, error) {
 		pars.advance()
 
 		if pars.currentToken.Type != lexer.IdentifierTT {
-			return nil, shared.InvalidSyntaxError("Expected identifier")
+			return nil, utils.InvalidSyntaxError("Expected identifier")
 		}
 
 		varName := pars.currentToken
 		pars.advance()
 
 		if pars.currentToken.Type != lexer.EqualsTT {
-			return nil, shared.InvalidSyntaxError("Expected '='")
+			return nil, utils.InvalidSyntaxError("Expected '='")
 		}
 
 		pars.advance()
@@ -368,7 +368,7 @@ func (pars *Parser) Parse() (AstNode, error) {
 	}
 
 	if pars.currentToken.Type != lexer.EOFTT {
-		return nil, shared.InvalidSyntaxError("Expected '+', '-', '*', '/', '^'")
+		return nil, utils.InvalidSyntaxError("Expected '+', '-', '*', '/', '^'")
 	}
 
 	return res, nil

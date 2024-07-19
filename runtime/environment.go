@@ -2,7 +2,7 @@ package runtime
 
 import (
 	"fmt"
-	"go-interpreter/shared"
+	"go-interpreter/utils"
 )
 
 type Environment struct {
@@ -36,7 +36,7 @@ func (env *Environment) Get(varName string) (RuntimeValue, error) {
 		return env.parent.Get(varName)
 	}
 
-	return nil, shared.RuntimeError(fmt.Sprintf("'%s' is not defined", varName))
+	return nil, utils.RuntimeError(fmt.Sprintf("'%s' is not defined", varName))
 }
 
 func (env *Environment) Set(varName string, value RuntimeValue) {

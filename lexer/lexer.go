@@ -2,7 +2,7 @@ package lexer
 
 import (
 	"fmt"
-	"go-interpreter/shared"
+	"go-interpreter/utils"
 	"regexp"
 	"slices"
 	"strings"
@@ -95,7 +95,7 @@ func (lex *Lexer) makeNotEquals() (*Token, error) {
 		return NewToken(NotEqualsTT, "!="), nil
 	}
 
-	return nil, shared.ExpectedCharError("'=' (after '!')")
+	return nil, utils.ExpectedCharError("'=' (after '!')")
 }
 
 func (lex *Lexer) makeEquals() *Token {
@@ -189,7 +189,7 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 		} else {
 			cc := lex.currentChar
 			lex.advance()
-			return nil, shared.IllegalCharError(fmt.Sprintf("'%s'", cc))
+			return nil, utils.IllegalCharError(fmt.Sprintf("'%s'", cc))
 		}
 
 	}
