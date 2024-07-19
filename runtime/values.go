@@ -58,7 +58,7 @@ func (nv *NumberValue) GetValue() any {
 }
 
 func (nv *NumberValue) Add(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '+'")
 	}
 
@@ -66,7 +66,7 @@ func (nv *NumberValue) Add(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) Subtract(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '-'")
 	}
 
@@ -74,7 +74,7 @@ func (nv *NumberValue) Subtract(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) Multiply(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '*'")
 	}
 
@@ -82,7 +82,7 @@ func (nv *NumberValue) Multiply(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) Divide(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '/'")
 	}
 
@@ -94,7 +94,7 @@ func (nv *NumberValue) Divide(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) Power(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '*'")
 	}
 
@@ -102,7 +102,7 @@ func (nv *NumberValue) Power(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) Equals(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '=='")
 	}
 
@@ -110,7 +110,7 @@ func (nv *NumberValue) Equals(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) NotEquals(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '!='")
 	}
 
@@ -118,7 +118,7 @@ func (nv *NumberValue) NotEquals(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) LessThan(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '<'")
 	}
 
@@ -126,7 +126,7 @@ func (nv *NumberValue) LessThan(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) GreaterThan(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '>'")
 	}
 
@@ -134,7 +134,7 @@ func (nv *NumberValue) GreaterThan(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) LessThanEquals(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '<='")
 	}
 
@@ -142,7 +142,7 @@ func (nv *NumberValue) LessThanEquals(other RuntimeValue) (RuntimeValue, error) 
 }
 
 func (nv *NumberValue) GreaterThanEquals(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation '>='")
 	}
 
@@ -150,7 +150,7 @@ func (nv *NumberValue) GreaterThanEquals(other RuntimeValue) (RuntimeValue, erro
 }
 
 func (nv *NumberValue) And(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation 'and'")
 	}
 
@@ -158,7 +158,7 @@ func (nv *NumberValue) And(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (nv *NumberValue) Or(other RuntimeValue) (RuntimeValue, error) {
-	if nv.Type != NumberVT && other.GetType() != NumberVT {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
 		return nil, utils.RuntimeError("Illegal operation 'or'")
 	}
 
