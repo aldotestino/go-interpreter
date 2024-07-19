@@ -4,7 +4,6 @@ import (
 	"go-interpreter/lexer"
 	"go-interpreter/parser"
 	"go-interpreter/utils"
-	"math"
 	"strconv"
 )
 
@@ -56,34 +55,31 @@ func (intr *Interpreter) visitBinOpNode(node *parser.BinOpNode, env *Environment
 	}
 
 	if node.Operation.Type == lexer.PlusTT {
-		return NewNumberValue(lhs.(*NumberValue).Value + rhs.(*NumberValue).Value), nil
+		return lhs.Add(rhs)
 	} else if node.Operation.Type == lexer.MinusTT {
-		return NewNumberValue(lhs.(*NumberValue).Value - rhs.(*NumberValue).Value), nil
+		return lhs.Subtract(rhs)
 	} else if node.Operation.Type == lexer.MultiplyTT {
-		return NewNumberValue(lhs.(*NumberValue).Value * rhs.(*NumberValue).Value), nil
+		return lhs.Multiply(rhs)
 	} else if node.Operation.Type == lexer.DivideTT {
-		if rhs.(*NumberValue).Value == 0 {
-			return nil, utils.RuntimeError("Division by 0")
-		}
-		return NewNumberValue(lhs.(*NumberValue).Value / rhs.(*NumberValue).Value), nil
+		return lhs.Divide(rhs)
 	} else if node.Operation.Type == lexer.PowerTT {
-		return NewNumberValue(math.Pow(lhs.(*NumberValue).Value, rhs.(*NumberValue).Value)), nil
+		return lhs.Power(rhs)
 	} else if node.Operation.Type == lexer.DoubleEqualsTT {
-		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value == rhs.(*NumberValue).Value)), nil
+		return lhs.Equals(rhs)
 	} else if node.Operation.Type == lexer.NotEqualsTT {
-		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value != rhs.(*NumberValue).Value)), nil
+		return lhs.NotEquals(rhs)
 	} else if node.Operation.Type == lexer.LessThanTT {
-		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value < rhs.(*NumberValue).Value)), nil
+		return lhs.LessThan(rhs)
 	} else if node.Operation.Type == lexer.LessThanEqualsTT {
-		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value <= rhs.(*NumberValue).Value)), nil
+		return lhs.LessThanEquals(rhs)
 	} else if node.Operation.Type == lexer.GreaterThanTT {
-		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value > rhs.(*NumberValue).Value)), nil
+		return lhs.GreaterThan(rhs)
 	} else if node.Operation.Type == lexer.GreaterThanEqualsTT {
-		return NewNumberValue(utils.BoolToNumber(lhs.(*NumberValue).Value >= rhs.(*NumberValue).Value)), nil
+		return lhs.GreaterThanEquals(rhs)
 	} else if node.Operation.Matches(lexer.KeywordTT, "and") {
-		return NewNumberValue(utils.AndNumbers(lhs.(*NumberValue).Value, rhs.(*NumberValue).Value)), nil
+		return lhs.And(rhs)
 	} else if node.Operation.Matches(lexer.KeywordTT, "or") {
-		return NewNumberValue(utils.OrNumbers(lhs.(*NumberValue).Value, rhs.(*NumberValue).Value)), nil
+		return lhs.Or(rhs)
 	}
 	return nil, utils.RuntimeError("Unsupported operation")
 }
@@ -196,6 +192,47 @@ func (intr *Interpreter) visitWhileNode(node *parser.WhileNode, env *Environment
 	return nil, nil
 }
 
+func (intr *Interpreter) visitFuncDefNode(node *parser.FuncDefNode, env *Environment) (RuntimeValue, error) {
+	funcName := "<anonymous>"
+
+	if node.VarName != nil {
+		funcName = node.VarName.Value
+	}
+
+	argNames := make([]string, 0)
+	for _, arg := range node.Args {
+		argNames = append(argNames, arg.Value)
+	}
+
+	funcValue := NewFunctionValue(funcName, node.Body, argNames)
+
+	if node.VarName != nil {
+		env.Set(funcName, funcValue)
+	}
+
+	return funcValue, nil
+}
+
+func (intr *Interpreter) visitCallNode(node *parser.CallNode, env *Environment) (RuntimeValue, error) {
+	args := make([]RuntimeValue, 0)
+
+	funcToCall, err := intr.Visit(node.Node, env)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, arg := range node.Args {
+		evalArg, err := intr.Visit(arg, env)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, evalArg)
+	}
+
+	return funcToCall.Execute(env, args)
+}
+
 func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeValue, error) {
 	switch node.GetType() {
 	case parser.NumberNT:
@@ -214,6 +251,10 @@ func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeVa
 		return intr.visitForNode(node.(*parser.ForNode), env)
 	case parser.WhileNT:
 		return intr.visitWhileNode(node.(*parser.WhileNode), env)
+	case parser.FuncDefNT:
+		return intr.visitFuncDefNode(node.(*parser.FuncDefNode), env)
+	case parser.CallNT:
+		return intr.visitCallNode(node.(*parser.CallNode), env)
 	default:
 		return nil, utils.RuntimeError("Unsupported node")
 	}

@@ -13,6 +13,8 @@ const (
 	IfNT        NodeType = "If"
 	ForNT       NodeType = "For"
 	WhileNT     NodeType = "While"
+	FuncDefNT   NodeType = "FunDef"
+	CallNT      NodeType = "Call"
 )
 
 type AstNode interface {
@@ -180,5 +182,47 @@ func NewWhileNode(c, b AstNode) *WhileNode {
 }
 
 func (n *WhileNode) GetType() NodeType {
+	return n.Type
+}
+
+// FuncDefNode
+
+type FuncDefNode struct {
+	Type    NodeType
+	VarName *lexer.Token
+	Args    []*lexer.Token
+	Body    AstNode
+}
+
+func NewFuncDefNode(v *lexer.Token, a []*lexer.Token, b AstNode) *FuncDefNode {
+	return &FuncDefNode{
+		Type:    FuncDefNT,
+		VarName: v,
+		Args:    a,
+		Body:    b,
+	}
+}
+
+func (n *FuncDefNode) GetType() NodeType {
+	return n.Type
+}
+
+// CallNode
+
+type CallNode struct {
+	Type NodeType
+	Node AstNode
+	Args []AstNode
+}
+
+func NewCallNode(n AstNode, a []AstNode) *CallNode {
+	return &CallNode{
+		Type: CallNT,
+		Node: n,
+		Args: a,
+	}
+}
+
+func (n *CallNode) GetType() NodeType {
 	return n.Type
 }

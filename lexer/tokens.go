@@ -21,6 +21,8 @@ const (
 	GreaterThanTT       TokenType = "GreaterThan"
 	LessThanEqualsTT    TokenType = "LessThanEquals"
 	GreaterThanEqualsTT TokenType = "GreaterThanEquals"
+	CommaTT             TokenType = "Comma"
+	ArrowTT             TokenType = "Arrow"
 	EOFTT               TokenType = "EOF"
 )
 
@@ -40,4 +42,4 @@ func (t *Token) Matches(tt TokenType, v string) bool {
 	return t.Type == tt && t.Value == v
 }
 
-var KEYWORDS = []string{"var", "and", "or", "not", "if", "then", "elif", "else", "for", "to", "step", "while"}
+var KEYWORDS = []string{"var", "and", "or", "not", "if", "then", "elif", "else", "for", "to", "step", "while", "fun"}

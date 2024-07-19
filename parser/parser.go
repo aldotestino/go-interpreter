@@ -12,18 +12,23 @@ import (
 // comp      : KEYWORD:not comp
 //           : mathExpr ((EE|NE|LT|LTE|GT|GTE) mathExpr)*
 
-// mathExpr-expr : term ((PLUS|MINUS) term)*
+// math-expr : term ((PLUS|MINUS) term)*
 
 // term      : factor ((MUL|DIV) factor)*
 
 // factor    : (PLUS|MINUS) factor
 //           : powerExpr
 
-// powerExpr-expr: atom (POW factor)*
+// power-expr: call (POW factor)*
+
+// call      : atom (OpenParen (expr (COMMA expr)*)? RightParen)?
 
 // atom      : INT|FLOAT|IDENTIFIER
 //	         : OpenParen expr CloseParen
 //           : if-expr
+//           : for-expr
+//           : while-expr
+//           : func-def
 
 // if-expr   : KEYOWRD:if expr KEYWORD:then expr
 //           : (KEYWORD:elif expr KEYWORD:then expr)*
@@ -33,6 +38,10 @@ import (
 //           : (KEYWORD:step expr)? KEYWORD:then expr
 
 // while-expr: KEYWORD:while expr KEYWORD:then expr
+
+// func-def  : KEYWORD:fun IDENTIFIER?
+//           : OpenParen (IDENTIFIER (COMMA IDENTIFIER)*)? CloseParen
+//           : ARROW expr
 
 type Parser struct {
 	tokens          []*lexer.Token
@@ -151,6 +160,115 @@ func (pars *Parser) whileExpr() (AstNode, error) {
 	return NewWhileNode(condition, body), nil
 }
 
+func (pars *Parser) funcDef() (AstNode, error) {
+	if !pars.currentToken.Matches(lexer.KeywordTT, "fun") {
+		return nil, utils.InvalidSyntaxError("Expected 'fun'")
+	}
+
+	pars.advance()
+
+	var varName *lexer.Token = nil
+	if pars.currentToken.Type == lexer.IdentifierTT {
+		varName = pars.currentToken
+
+		pars.advance()
+
+		if pars.currentToken.Type != lexer.OpenParenTT {
+			return nil, utils.InvalidSyntaxError("Expected '('")
+		}
+	} else {
+		if pars.currentToken.Type != lexer.OpenParenTT {
+			return nil, utils.InvalidSyntaxError("Expected '('")
+		}
+	}
+
+	pars.advance()
+
+	args := make([]*lexer.Token, 0)
+
+	if pars.currentToken.Type == lexer.IdentifierTT {
+		args = append(args, pars.currentToken)
+		pars.advance()
+
+		for pars.currentToken.Type == lexer.CommaTT {
+			pars.advance()
+
+			if pars.currentToken.Type != lexer.IdentifierTT {
+				return nil, utils.InvalidSyntaxError("Expected identifier")
+			}
+
+			args = append(args, pars.currentToken)
+			pars.advance()
+		}
+
+		if pars.currentToken.Type != lexer.CloseParenTT {
+			return nil, utils.InvalidSyntaxError("Expected ')'")
+		}
+	} else {
+		if pars.currentToken.Type != lexer.CloseParenTT {
+			return nil, utils.InvalidSyntaxError("Expected identifier or ')'")
+		}
+	}
+
+	pars.advance()
+
+	if pars.currentToken.Type != lexer.ArrowTT {
+		return nil, utils.InvalidSyntaxError("Expected '->'")
+	}
+
+	pars.advance()
+
+	node, err := pars.expr()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFuncDefNode(varName, args, node), nil
+}
+
+func (pars *Parser) call() (AstNode, error) {
+	atom, err := pars.atom()
+	if err != nil {
+		return nil, err
+	}
+
+	if pars.currentToken.Type == lexer.OpenParenTT {
+		pars.advance()
+		args := make([]AstNode, 0)
+
+		if pars.currentToken.Type == lexer.CloseParenTT {
+			pars.advance()
+		} else {
+			newArg, err := pars.expr()
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, newArg)
+
+			for pars.currentToken.Type == lexer.CommaTT {
+				pars.advance()
+
+				newArg, err = pars.expr()
+				if err != nil {
+					return nil, err
+				}
+				args = append(args, newArg)
+			}
+
+			if pars.currentToken.Type != lexer.CloseParenTT {
+				return nil, utils.InvalidSyntaxError("Expected ')'")
+			}
+
+			pars.advance()
+		}
+
+		return NewCallNode(atom, args), nil
+	}
+
+	return atom, nil
+}
+
 func (pars *Parser) ifExpr() (AstNode, error) {
 	var cases = make([][]AstNode, 0)
 	var elseCase AstNode = nil
@@ -241,14 +359,16 @@ func (pars *Parser) atom() (AstNode, error) {
 		return pars.forExpr()
 	} else if token.Matches(lexer.KeywordTT, "while") {
 		return pars.whileExpr()
+	} else if token.Matches(lexer.KeywordTT, "fun") {
+		return pars.funcDef()
 	}
 
 	var errMsg string
 
 	if pars.currentPosition > 1 { // we advanced, so we don't expect the 'var' keyword
-		errMsg = "Expected int, float, identifier, '+', '-' or ')'"
+		errMsg = "Expected int, float, identifier, '+', '-', ')', 'if', 'for', 'while' or 'fun'"
 	} else {
-		errMsg = "Expected int, float, identifier, 'var', '+', '-', ')' or '!'"
+		errMsg = "Expected int, float, identifier, 'var', '+', '-', ')', '!', 'if', 'for', 'while' or 'fun'"
 	}
 
 	return nil, utils.InvalidSyntaxError(errMsg)
@@ -319,7 +439,7 @@ func (pars *Parser) comp() (AstNode, error) {
 }
 
 func (pars *Parser) powerExpr() (AstNode, error) {
-	return pars.binOp(pars.atom, pars.factor, func(t *lexer.Token) bool {
+	return pars.binOp(pars.call, pars.factor, func(t *lexer.Token) bool {
 		return t.Type == lexer.PowerTT
 	})
 }

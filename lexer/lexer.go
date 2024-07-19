@@ -143,6 +143,21 @@ func (lex *Lexer) makeGreaterThan() *Token {
 	return NewToken(tt, val)
 }
 
+func (lex *Lexer) makeMinusOrArrow() *Token {
+	lex.advance()
+	tt := MinusTT
+	val := "-"
+
+	if lex.currentChar == ">" {
+		lex.advance()
+		tt = ArrowTT
+		val = "->"
+	}
+
+	return NewToken(tt, val)
+
+}
+
 func (lex *Lexer) Tokenize() ([]*Token, error) {
 	tokens := make([]*Token, 0)
 
@@ -157,8 +172,7 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 			tokens = append(tokens, NewToken(PlusTT, lex.currentChar))
 			lex.advance()
 		} else if lex.currentChar == "-" {
-			tokens = append(tokens, NewToken(MinusTT, lex.currentChar))
-			lex.advance()
+			tokens = append(tokens, lex.makeMinusOrArrow())
 		} else if lex.currentChar == "*" {
 			tokens = append(tokens, NewToken(MultiplyTT, lex.currentChar))
 			lex.advance()
@@ -186,6 +200,9 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 			tokens = append(tokens, lex.makeLessThan())
 		} else if lex.currentChar == ">" { // creates '>' or '>='
 			tokens = append(tokens, lex.makeGreaterThan())
+		} else if lex.currentChar == "," {
+			tokens = append(tokens, NewToken(CommaTT, lex.currentChar))
+			lex.advance()
 		} else {
 			cc := lex.currentChar
 			lex.advance()
