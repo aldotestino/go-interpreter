@@ -23,6 +23,7 @@ type RuntimeValue interface {
 	Subtract(other RuntimeValue) (RuntimeValue, error)
 	Multiply(other RuntimeValue) (RuntimeValue, error)
 	Divide(other RuntimeValue) (RuntimeValue, error)
+	Mod(other RuntimeValue) (RuntimeValue, error)
 	Power(other RuntimeValue) (RuntimeValue, error)
 	Equals(other RuntimeValue) (RuntimeValue, error)
 	NotEquals(other RuntimeValue) (RuntimeValue, error)
@@ -92,6 +93,14 @@ func (nv *NumberValue) Divide(other RuntimeValue) (RuntimeValue, error) {
 	}
 
 	return NewNumberValue(nv.Value / other.GetValue().(float64)), nil
+}
+
+func (nv *NumberValue) Mod(other RuntimeValue) (RuntimeValue, error) {
+	if nv.Type != NumberVT || other.GetType() != NumberVT {
+		return nil, utils.RuntimeError("Illegal operation '%'")
+	}
+
+	return NewNumberValue(math.Mod(nv.Value, other.GetValue().(float64))), nil
 }
 
 func (nv *NumberValue) Power(other RuntimeValue) (RuntimeValue, error) {
@@ -212,6 +221,10 @@ func (f *FunctionValue) Divide(other RuntimeValue) (RuntimeValue, error) {
 	return nil, utils.RuntimeError("Illegal operation '/'")
 }
 
+func (f *FunctionValue) Mod(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '%'")
+}
+
 func (f *FunctionValue) Power(other RuntimeValue) (RuntimeValue, error) {
 	return nil, utils.RuntimeError("Illegal operation '^'")
 }
@@ -320,6 +333,10 @@ func (s *StringValue) Multiply(other RuntimeValue) (RuntimeValue, error) {
 
 func (s *StringValue) Divide(other RuntimeValue) (RuntimeValue, error) {
 	return nil, utils.RuntimeError("Illegal operation '/'")
+}
+
+func (s *StringValue) Mod(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '%'")
 }
 
 func (s *StringValue) Power(other RuntimeValue) (RuntimeValue, error) {

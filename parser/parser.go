@@ -14,7 +14,7 @@ import (
 
 // math-expr : term ((PLUS|MINUS) term)*
 
-// term      : factor ((MUL|DIV) factor)*
+// term      : factor ((MUL|DIV|MOD) factor)*
 
 // factor    : (PLUS|MINUS) factor
 //           : powerExpr
@@ -449,7 +449,7 @@ func (pars *Parser) powerExpr() (AstNode, error) {
 
 func (pars *Parser) term() (AstNode, error) {
 	return pars.binOp(pars.factor, pars.factor, func(t *lexer.Token) bool {
-		return slices.Contains([]lexer.TokenType{lexer.MultiplyTT, lexer.DivideTT}, t.Type)
+		return slices.Contains([]lexer.TokenType{lexer.MultiplyTT, lexer.DivideTT, lexer.ModTT}, t.Type)
 	})
 }
 

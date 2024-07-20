@@ -11,6 +11,7 @@ const (
 	MinusTT             TokenType = "Minus"
 	MultiplyTT          TokenType = "Multiply"
 	DivideTT            TokenType = "Divide"
+	ModTT               TokenType = "Mod"
 	PowerTT             TokenType = "Power"
 	EqualsTT            TokenType = "Equals"
 	OpenParenTT         TokenType = "OpenParen"

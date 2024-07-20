@@ -62,6 +62,8 @@ func (intr *Interpreter) visitBinOpNode(node *parser.BinOpNode, env *Environment
 		return lhs.Multiply(rhs)
 	} else if node.Operation.Type == lexer.DivideTT {
 		return lhs.Divide(rhs)
+	} else if node.Operation.Type == lexer.ModTT {
+		return lhs.Mod(rhs)
 	} else if node.Operation.Type == lexer.PowerTT {
 		return lhs.Power(rhs)
 	} else if node.Operation.Type == lexer.DoubleEqualsTT {

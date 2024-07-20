@@ -215,6 +215,9 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 		} else if lex.currentChar == "/" {
 			tokens = append(tokens, NewToken(DivideTT, lex.currentChar))
 			lex.advance()
+		} else if lex.currentChar == "%" {
+			tokens = append(tokens, NewToken(ModTT, lex.currentChar))
+			lex.advance()
 		} else if lex.currentChar == "^" {
 			tokens = append(tokens, NewToken(PowerTT, lex.currentChar))
 			lex.advance()
