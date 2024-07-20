@@ -233,6 +233,10 @@ func (intr *Interpreter) visitCallNode(node *parser.CallNode, env *Environment) 
 	return funcToCall.Execute(env, args)
 }
 
+func (intr *Interpreter) visitStringNode(node *parser.StringNode, env *Environment) (RuntimeValue, error) {
+	return NewStringValue(node.Token.Value), nil
+}
+
 func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeValue, error) {
 	switch node.GetType() {
 	case parser.NumberNT:
@@ -255,6 +259,8 @@ func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeVa
 		return intr.visitFuncDefNode(node.(*parser.FuncDefNode), env)
 	case parser.CallNT:
 		return intr.visitCallNode(node.(*parser.CallNode), env)
+	case parser.StringNT:
+		return intr.visitStringNode(node.(*parser.StringNode), env)
 	default:
 		return nil, utils.RuntimeError("Unsupported node")
 	}

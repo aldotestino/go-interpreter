@@ -23,6 +23,7 @@ const (
 	GreaterThanEqualsTT TokenType = "GreaterThanEquals"
 	CommaTT             TokenType = "Comma"
 	ArrowTT             TokenType = "Arrow"
+	StringTT            TokenType = "String"
 	EOFTT               TokenType = "EOF"
 )
 

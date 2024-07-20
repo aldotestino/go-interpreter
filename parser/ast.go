@@ -15,6 +15,7 @@ const (
 	WhileNT     NodeType = "While"
 	FuncDefNT   NodeType = "FunDef"
 	CallNT      NodeType = "Call"
+	StringNT    NodeType = "String"
 )
 
 type AstNode interface {
@@ -224,5 +225,23 @@ func NewCallNode(n AstNode, a []AstNode) *CallNode {
 }
 
 func (n *CallNode) GetType() NodeType {
+	return n.Type
+}
+
+// StringNode
+
+type StringNode struct {
+	Type  NodeType
+	Token *lexer.Token
+}
+
+func NewStringNode(token *lexer.Token) *StringNode {
+	return &StringNode{
+		Type:  StringNT,
+		Token: token,
+	}
+}
+
+func (n *StringNode) GetType() NodeType {
 	return n.Type
 }

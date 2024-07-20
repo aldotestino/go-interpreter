@@ -158,6 +158,40 @@ func (lex *Lexer) makeMinusOrArrow() *Token {
 
 }
 
+func (lex *Lexer) makeString() *Token {
+	str := ""
+	escapeChar := false
+	lex.advance()
+
+	escapeChars := map[string]string{
+		"n": "\n",
+		"t": "\t",
+	}
+
+	for lex.currentChar != "" && (lex.currentChar != "\"" || escapeChar) {
+		if escapeChar {
+			rep, found := escapeChars[lex.currentChar]
+			if found {
+				str += rep
+			} else {
+				str += lex.currentChar
+			}
+		} else {
+			if lex.currentChar == "\\" {
+				escapeChar = true
+			} else {
+				str += lex.currentChar
+			}
+		}
+		lex.advance()
+		escapeChar = false
+	}
+
+	lex.advance()
+
+	return NewToken(StringTT, str)
+}
+
 func (lex *Lexer) Tokenize() ([]*Token, error) {
 	tokens := make([]*Token, 0)
 
@@ -168,6 +202,8 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 			tokens = append(tokens, lex.makeNumber())
 		} else if lex.isAlpha(lex.currentChar) {
 			tokens = append(tokens, lex.makeIdentifier())
+		} else if lex.currentChar == "\"" {
+			tokens = append(tokens, lex.makeString())
 		} else if lex.currentChar == "+" {
 			tokens = append(tokens, NewToken(PlusTT, lex.currentChar))
 			lex.advance()

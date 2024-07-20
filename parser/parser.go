@@ -23,7 +23,7 @@ import (
 
 // call      : atom (OpenParen (expr (COMMA expr)*)? RightParen)?
 
-// atom      : INT|FLOAT|IDENTIFIER
+// atom      : INT|FLOAT|STRING|IDENTIFIER
 //	         : OpenParen expr CloseParen
 //           : if-expr
 //           : for-expr
@@ -336,6 +336,9 @@ func (pars *Parser) atom() (AstNode, error) {
 	if token.Type == lexer.IntTT || token.Type == lexer.FloatTT {
 		pars.advance()
 		return NewNumberNode(token), nil
+	} else if token.Type == lexer.StringTT {
+		pars.advance()
+		return NewStringNode(token), nil
 	} else if token.Type == lexer.IdentifierTT {
 		pars.advance()
 		return NewVarAccessNode(token), nil

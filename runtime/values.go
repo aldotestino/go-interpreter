@@ -12,6 +12,7 @@ type ValueType string
 const (
 	NumberVT ValueType = "Number"
 	FuncVT   ValueType = "Function"
+	StringVT ValueType = "String"
 )
 
 type RuntimeValue interface {
@@ -266,4 +267,105 @@ func (f *FunctionValue) Execute(parentEnv *Environment, args []RuntimeValue) (Ru
 	}
 
 	return intr.Visit(f.Body, env)
+}
+
+// StringValue
+
+type StringValue struct {
+	Type  ValueType
+	Value string
+}
+
+func NewStringValue(v string) *StringValue {
+	return &StringValue{
+		Type:  StringVT,
+		Value: v,
+	}
+}
+
+func (s *StringValue) GetType() ValueType {
+	return s.Type
+}
+
+func (s *StringValue) GetValue() any {
+	return s.Value
+}
+
+func (s *StringValue) Add(other RuntimeValue) (RuntimeValue, error) {
+	if s.Type != StringVT || other.GetType() != StringVT {
+		return nil, utils.RuntimeError("Illegal operation '+'")
+	}
+
+	return NewStringValue(s.Value + other.GetValue().(string)), nil
+}
+
+func (s *StringValue) Subtract(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '-'")
+}
+
+func (s *StringValue) Multiply(other RuntimeValue) (RuntimeValue, error) {
+	if s.Type != StringVT || other.GetType() != NumberVT {
+		return nil, utils.RuntimeError("Illegal operation '*'")
+	}
+
+	finalStr := ""
+	times := int(other.GetValue().(float64))
+
+	for i := 0; i < times; i++ {
+		finalStr += s.Value
+	}
+
+	return NewStringValue(finalStr), nil
+}
+
+func (s *StringValue) Divide(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '/'")
+}
+
+func (s *StringValue) Power(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '^'")
+}
+
+func (s *StringValue) Equals(other RuntimeValue) (RuntimeValue, error) {
+	if s.Type != StringVT || other.GetType() != StringVT {
+		return nil, utils.RuntimeError("Illegal operation '=='")
+	}
+
+	return NewNumberValue(utils.BoolToNumber(s.Value == other.GetValue().(string))), nil
+}
+
+func (s *StringValue) NotEquals(other RuntimeValue) (RuntimeValue, error) {
+	if s.Type != StringVT || other.GetType() != StringVT {
+		return nil, utils.RuntimeError("Illegal operation '!='")
+	}
+
+	return NewNumberValue(utils.BoolToNumber(s.Value != other.GetValue().(string))), nil
+}
+
+func (s *StringValue) LessThan(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '<'")
+}
+
+func (s *StringValue) GreaterThan(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '>'")
+}
+
+func (s *StringValue) LessThanEquals(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '<='")
+}
+
+func (s *StringValue) GreaterThanEquals(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '>='")
+}
+
+func (s *StringValue) And(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation 'and'")
+}
+
+func (s *StringValue) Or(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation 'or'")
+}
+
+func (s *StringValue) Execute(parentEnv *Environment, args []RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '()'")
 }
