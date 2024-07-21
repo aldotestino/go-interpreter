@@ -227,6 +227,12 @@ func (lex *Lexer) Tokenize() ([]*Token, error) {
 		} else if lex.currentChar == ")" {
 			tokens = append(tokens, NewToken(CloseParenTT, lex.currentChar))
 			lex.advance()
+		} else if lex.currentChar == "[" {
+			tokens = append(tokens, NewToken(OpenBracketTT, lex.currentChar))
+			lex.advance()
+		} else if lex.currentChar == "]" {
+			tokens = append(tokens, NewToken(CloseBracketTT, lex.currentChar))
+			lex.advance()
 		} else if lex.currentChar == "!" {
 			neToken, err := lex.makeNotEquals()
 			if err != nil {

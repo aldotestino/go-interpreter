@@ -161,20 +161,26 @@ func (intr *Interpreter) visitForNode(node *parser.ForNode, env *Environment) (R
 		}
 	}
 
+	els := make([]RuntimeValue, 0)
+
 	for condition() {
 		env.Set(node.VarName.Value, NewNumberValue(i))
 		i += stepValue.Value
 
-		_, err := intr.Visit(node.Body, env)
+		el, err := intr.Visit(node.Body, env)
 		if err != nil {
 			return nil, err
 		}
+		els = append(els, el)
 	}
 
-	return nil, nil
+	return NewListValue(els), nil
 }
 
 func (intr *Interpreter) visitWhileNode(node *parser.WhileNode, env *Environment) (RuntimeValue, error) {
+
+	els := make([]RuntimeValue, 0)
+
 	for {
 		condition, err := intr.Visit(node.Condition, env)
 		if err != nil {
@@ -185,13 +191,15 @@ func (intr *Interpreter) visitWhileNode(node *parser.WhileNode, env *Environment
 			break
 		}
 
-		_, err = intr.Visit(node.Body, env)
+		el, err := intr.Visit(node.Body, env)
 		if err != nil {
 			return nil, err
 		}
+
+		els = append(els, el)
 	}
 
-	return nil, nil
+	return NewListValue(els), nil
 }
 
 func (intr *Interpreter) visitFuncDefNode(node *parser.FuncDefNode, env *Environment) (RuntimeValue, error) {
@@ -239,6 +247,20 @@ func (intr *Interpreter) visitStringNode(node *parser.StringNode, env *Environme
 	return NewStringValue(node.Token.Value), nil
 }
 
+func (intr *Interpreter) visitListNode(node *parser.ListNode, env *Environment) (RuntimeValue, error) {
+	elements := make([]RuntimeValue, 0)
+
+	for _, el := range node.Elements {
+		elVal, err := intr.Visit(el, env)
+		if err != nil {
+			return nil, err
+		}
+		elements = append(elements, elVal)
+	}
+
+	return NewListValue(elements), nil
+}
+
 func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeValue, error) {
 	switch node.GetType() {
 	case parser.NumberNT:
@@ -263,6 +285,8 @@ func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeVa
 		return intr.visitCallNode(node.(*parser.CallNode), env)
 	case parser.StringNT:
 		return intr.visitStringNode(node.(*parser.StringNode), env)
+	case parser.ListNT:
+		return intr.visitListNode(node.(*parser.ListNode), env)
 	default:
 		return nil, utils.RuntimeError("Unsupported node")
 	}

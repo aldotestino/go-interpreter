@@ -32,3 +32,7 @@ func OrNumbers(n1, n2 float64) float64 {
 	}
 	return 0
 }
+
+func FloatIsInt(n float64) bool {
+	return n == float64(int(n))
+}

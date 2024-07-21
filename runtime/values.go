@@ -5,6 +5,8 @@ import (
 	"go-interpreter/parser"
 	"go-interpreter/utils"
 	"math"
+	"reflect"
+	"slices"
 )
 
 type ValueType string
@@ -13,11 +15,13 @@ const (
 	NumberVT ValueType = "Number"
 	FuncVT   ValueType = "Function"
 	StringVT ValueType = "String"
+	ListVT   ValueType = "List"
 )
 
 type RuntimeValue interface {
 	GetType() ValueType
 	GetValue() any
+	Print() string
 
 	Add(other RuntimeValue) (RuntimeValue, error)
 	Subtract(other RuntimeValue) (RuntimeValue, error)
@@ -57,6 +61,10 @@ func (nv *NumberValue) GetType() ValueType {
 
 func (nv *NumberValue) GetValue() any {
 	return nv.Value
+}
+
+func (nv *NumberValue) Print() string {
+	return fmt.Sprintf("%v", nv.Value)
 }
 
 func (nv *NumberValue) Add(other RuntimeValue) (RuntimeValue, error) {
@@ -202,6 +210,10 @@ func (f *FunctionValue) GetType() ValueType {
 }
 
 func (f *FunctionValue) GetValue() any {
+	return f.Body
+}
+
+func (f *FunctionValue) Print() string {
 	return fmt.Sprintf("<function %s>", f.Name)
 }
 
@@ -304,6 +316,10 @@ func (s *StringValue) GetValue() any {
 	return s.Value
 }
 
+func (s *StringValue) Print() string {
+	return s.Value
+}
+
 func (s *StringValue) Add(other RuntimeValue) (RuntimeValue, error) {
 	if s.Type != StringVT || other.GetType() != StringVT {
 		return nil, utils.RuntimeError("Illegal operation '+'")
@@ -384,5 +400,168 @@ func (s *StringValue) Or(other RuntimeValue) (RuntimeValue, error) {
 }
 
 func (s *StringValue) Execute(parentEnv *Environment, args []RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '()'")
+}
+
+// ListValue
+
+type ListValue struct {
+	Type     ValueType
+	Elements []RuntimeValue
+}
+
+func NewListValue(els []RuntimeValue) *ListValue {
+	return &ListValue{
+		Type:     ListVT,
+		Elements: els,
+	}
+}
+
+func (l *ListValue) GetType() ValueType {
+	return ListVT
+}
+
+func (l *ListValue) GetValue() any {
+	return l.Elements
+}
+
+func (l *ListValue) Print() string {
+	str := "["
+	for i, el := range l.Elements {
+		str += fmt.Sprintf("%v", el.Print())
+		if i != len(l.Elements)-1 {
+			str += ", "
+		}
+	}
+
+	str += "]"
+	return str
+}
+
+// append a single element to a list
+func (l *ListValue) Add(other RuntimeValue) (RuntimeValue, error) {
+	if l.Type != ListVT || other.GetType() != NumberVT {
+		return nil, utils.RuntimeError("Illegal operation '+'")
+	}
+
+	return NewListValue(append(l.Elements, other)), nil
+}
+
+// remove element at index other.Value from list
+func (l *ListValue) Subtract(other RuntimeValue) (RuntimeValue, error) {
+	if l.Type != ListVT || other.GetType() != NumberVT {
+		return nil, utils.RuntimeError("Illegal operation '-'")
+	}
+
+	index := other.GetValue().(float64)
+
+	if !utils.FloatIsInt(index) {
+		return nil, utils.RuntimeError("Index must be an integer")
+	}
+
+	absIndex := int(math.Abs(index))
+	length := len(l.Elements)
+
+	if absIndex > length {
+		return nil, utils.RuntimeError("Index out of bounds")
+	}
+
+	elementsCopy := make([]RuntimeValue, len(l.Elements))
+	copy(elementsCopy, l.Elements)
+	var newElements []RuntimeValue
+
+	if index >= 0 {
+		newElements = append(elementsCopy[:absIndex], elementsCopy[absIndex+1:]...)
+	} else {
+		newElements = append(elementsCopy[:length-absIndex], elementsCopy[length-absIndex+1:]...)
+	}
+
+	return NewListValue(newElements), nil
+}
+
+// concat list
+func (l *ListValue) Multiply(other RuntimeValue) (RuntimeValue, error) {
+	if l.Type != ListVT || other.GetType() != ListVT {
+		return nil, utils.RuntimeError("Illegal operation '*'")
+	}
+
+	return NewListValue(slices.Concat(l.Elements, other.(*ListValue).Elements)), nil
+}
+
+// get element at index other.Value
+func (l *ListValue) Divide(other RuntimeValue) (RuntimeValue, error) {
+	if l.Type != ListVT || other.GetType() != NumberVT {
+		return nil, utils.RuntimeError("Illegal operation '/'")
+	}
+
+	index := other.GetValue().(float64)
+
+	if index != float64(int(index)) {
+		return nil, utils.RuntimeError("Index must be an integer")
+	}
+
+	absIndex := int(math.Abs(index))
+	length := len(l.Elements)
+
+	if absIndex > length {
+		return nil, utils.RuntimeError("Index out of bounds")
+	}
+
+	if index >= 0 {
+		return l.Elements[absIndex], nil
+	} else {
+		return l.Elements[length-absIndex], nil
+	}
+}
+
+func (l *ListValue) Mod(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '%'")
+}
+
+func (l *ListValue) Power(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '^'")
+}
+
+func (l *ListValue) Equals(other RuntimeValue) (RuntimeValue, error) {
+	if l.Type != ListVT || other.GetType() != ListVT {
+		return nil, utils.RuntimeError("Illegal operation '=='")
+	}
+
+	return NewNumberValue(utils.BoolToNumber(reflect.DeepEqual(l.Elements, other.(*ListValue).Elements))), nil
+}
+
+func (l *ListValue) NotEquals(other RuntimeValue) (RuntimeValue, error) {
+	if l.Type != ListVT || other.GetType() != ListVT {
+		return nil, utils.RuntimeError("Illegal operation '!='")
+	}
+
+	return NewNumberValue(utils.BoolToNumber(!reflect.DeepEqual(l.Elements, other.(*ListValue).Elements))), nil
+}
+
+func (l *ListValue) LessThan(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '<'")
+}
+
+func (l *ListValue) GreaterThan(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '>'")
+}
+
+func (l *ListValue) LessThanEquals(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '<='")
+}
+
+func (l *ListValue) GreaterThanEquals(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation '>='")
+}
+
+func (l *ListValue) And(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation 'and'")
+}
+
+func (l *ListValue) Or(other RuntimeValue) (RuntimeValue, error) {
+	return nil, utils.RuntimeError("Illegal operation 'or'")
+}
+
+func (l *ListValue) Execute(parentEnv *Environment, args []RuntimeValue) (RuntimeValue, error) {
 	return nil, utils.RuntimeError("Illegal operation '()'")
 }

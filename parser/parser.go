@@ -25,10 +25,13 @@ import (
 
 // atom      : INT|FLOAT|STRING|IDENTIFIER
 //	         : OpenParen expr CloseParen
+//           : list
 //           : if-expr
 //           : for-expr
 //           : while-expr
 //           : func-def
+
+// list-expr : OpenBracket (expr, (COMMA expr)*)? CloseBracket
 
 // if-expr   : KEYOWRD:if expr KEYWORD:then expr
 //           : (KEYWORD:elif expr KEYWORD:then expr)*
@@ -330,6 +333,44 @@ func (pars *Parser) ifExpr() (AstNode, error) {
 	return NewIfNode(cases, elseCase), nil
 }
 
+func (pars *Parser) listExpr() (AstNode, error) {
+	elements := make([]AstNode, 0)
+
+	if pars.currentToken.Type != lexer.OpenBracketTT {
+		return nil, utils.InvalidSyntaxError("Expected ']'")
+	}
+
+	pars.advance()
+
+	if pars.currentToken.Type == lexer.CloseBracketTT {
+		pars.advance()
+	} else {
+		newEl, err := pars.expr()
+		if err != nil {
+			return nil, err
+		}
+		elements = append(elements, newEl)
+
+		for pars.currentToken.Type == lexer.CommaTT {
+			pars.advance()
+
+			newEl, err = pars.expr()
+			if err != nil {
+				return nil, err
+			}
+			elements = append(elements, newEl)
+		}
+
+		if pars.currentToken.Type != lexer.CloseBracketTT {
+			return nil, utils.InvalidSyntaxError("Expected ']'")
+		}
+
+		pars.advance()
+	}
+
+	return NewListNode(elements), nil
+}
+
 func (pars *Parser) atom() (AstNode, error) {
 	token := pars.currentToken
 
@@ -356,6 +397,8 @@ func (pars *Parser) atom() (AstNode, error) {
 		} else {
 			return nil, utils.InvalidSyntaxError("Expected ')'")
 		}
+	} else if token.Type == lexer.OpenBracketTT {
+		return pars.listExpr()
 	} else if token.Matches(lexer.KeywordTT, "if") {
 		return pars.ifExpr()
 	} else if token.Matches(lexer.KeywordTT, "for") {
@@ -369,9 +412,9 @@ func (pars *Parser) atom() (AstNode, error) {
 	var errMsg string
 
 	if pars.currentPosition > 1 { // we advanced, so we don't expect the 'var' keyword
-		errMsg = "Expected int, float, identifier, '+', '-', ')', 'if', 'for', 'while' or 'fun'"
+		errMsg = "Expected int, float, identifier, '+', '-', '(', '[', 'if', 'for', 'while' or 'fun'"
 	} else {
-		errMsg = "Expected int, float, identifier, 'var', '+', '-', ')', '!', 'if', 'for', 'while' or 'fun'"
+		errMsg = "Expected int, float, identifier, 'var', '+', '-', '(', '[', '!', 'if', 'for', 'while' or 'fun'"
 	}
 
 	return nil, utils.InvalidSyntaxError(errMsg)

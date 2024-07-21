@@ -16,6 +16,8 @@ const (
 	EqualsTT            TokenType = "Equals"
 	OpenParenTT         TokenType = "OpenParen"
 	CloseParenTT        TokenType = "CloseParen"
+	OpenBracketTT       TokenType = "OpenBracket"
+	CloseBracketTT      TokenType = "CloseBracket"
 	DoubleEqualsTT      TokenType = "DoubleEquals"
 	NotEqualsTT         TokenType = "NotEquals"
 	LessThanTT          TokenType = "LessThan"

@@ -16,6 +16,7 @@ const (
 	FuncDefNT   NodeType = "FunDef"
 	CallNT      NodeType = "Call"
 	StringNT    NodeType = "String"
+	ListNT      NodeType = "List"
 )
 
 type AstNode interface {
@@ -243,5 +244,23 @@ func NewStringNode(token *lexer.Token) *StringNode {
 }
 
 func (n *StringNode) GetType() NodeType {
+	return n.Type
+}
+
+// ListNode
+
+type ListNode struct {
+	Type     NodeType
+	Elements []AstNode
+}
+
+func NewListNode(els []AstNode) *ListNode {
+	return &ListNode{
+		Type:     ListNT,
+		Elements: els,
+	}
+}
+
+func (n *ListNode) GetType() NodeType {
 	return n.Type
 }
