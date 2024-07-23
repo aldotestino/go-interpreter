@@ -243,7 +243,7 @@ func (intr *Interpreter) visitCallNode(node *parser.CallNode, env *Environment) 
 	return funcToCall.Execute(env, args)
 }
 
-func (intr *Interpreter) visitStringNode(node *parser.StringNode, env *Environment) (RuntimeValue, error) {
+func (intr *Interpreter) visitStringNode(node *parser.StringNode) (RuntimeValue, error) {
 	return NewStringValue(node.Token.Value), nil
 }
 
@@ -284,7 +284,7 @@ func (intr *Interpreter) Visit(node parser.AstNode, env *Environment) (RuntimeVa
 	case parser.CallNT:
 		return intr.visitCallNode(node.(*parser.CallNode), env)
 	case parser.StringNT:
-		return intr.visitStringNode(node.(*parser.StringNode), env)
+		return intr.visitStringNode(node.(*parser.StringNode))
 	case parser.ListNT:
 		return intr.visitListNode(node.(*parser.ListNode), env)
 	default:

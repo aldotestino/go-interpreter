@@ -427,10 +427,13 @@ func (l *ListValue) GetValue() any {
 
 func (l *ListValue) Print() string {
 	str := "["
+
 	for i, el := range l.Elements {
-		str += fmt.Sprintf("%v", el.Print())
-		if i != len(l.Elements)-1 {
-			str += ", "
+		if el != nil {
+			if i > 0 {
+				str += ", "
+			}
+			str += fmt.Sprintf("%v", el.Print())
 		}
 	}
 
